@@ -3,7 +3,7 @@ import pandas as pd
 import openpyxl
 import sys
 
-from I_and_O.excel_input import load_excel
+from IO.excel_input import load_excel
 
 
 def get_pre_processing_excel(filename, sheet='Tabelle1', path='C:/Users/86781/PycharmProjects/pythonProject/venv/data/'):

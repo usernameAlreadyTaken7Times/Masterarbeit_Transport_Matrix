@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.axes as mae
 import matplotlib.pyplot as plt
-from I_and_O.excel_input import load_excel
+from IO.excel_input import load_excel
 
 
 def get_state_num_from_state_name(state_name):
@@ -54,14 +54,11 @@ def get_retail_average(predict_year, predict_state, data_filename='C:/Users/8678
     """This funktion is used to calculate the relationship between GDP of a german state and its population.
     Then use the input state name and year to predict the state's retail sale average amount (Euro/per person).
     Then in other scripts, this value can be used to multiply the predicted population in the chosen test area and
-    get the retail amount for the area.
-    To achieve the goal, an Excel file containing the relevant data is applied, and inside this funktion, several
-    regression equations are needed for such process.
-
-        1. init: read data from file and variables init
-        2. Curve fitting: try to use curve_fit function and preset functions f(x) to fit the data
-        3. Forecast value acquiring: use the given year to output the predict retail amount and population of the chosen
-       state and time
+    get the retail amount for the area. To achieve the goal, an Excel file containing the relevant data is applied,
+    and inside this funktion, several regression equations are needed for such process. First, init: read data from
+    file and variables init, Second, curve fitting: try to use curve_fit function and preset functions f(x) to fit
+    the data and third, forecast value acquiring: use the given year to output the predict retail amount and population
+    of the chosen state and time.
 
     :param int predict_year: The year you want to predict
     :param str predict_state: the german state you want to predict
