@@ -4,61 +4,17 @@ import matplotlib.pyplot as plt
 import pandas
 import os
 
+from algorithm.calc_block_pop import get_block_pop
 
-def get_block_pop(idx, year, data_path='C:/Users/86781/PycharmProjects/pythonProject/data/'):
-    """Use the regression analyzing to predict the population in the chosen block in certain year.
-    :param int idx: The index(row) of the block in the .csv file,
-    :param int year: the year you want to predict,
-    :param str data_path: the data path, in which the .csv file is stored,
-    :return: the predicted population number in the chosen block, in certain year.
-    """
-    # For every block in the test area, read the historical data from .csv file and fit with a suitable function.
-    filename = 'pop_dsy_merged.csv'
-
-    # check if the file exists or not
-    if os.path.exists(data_path + filename):
-        pass
-    else:
-        print('No population density file found. Please run the update program for world population density files.')
-
-    pop_csv = pandas.read_csv(data_path + filename)
-    pop_block = np.zeros(21)
-    year_block = np.zeros(21)
-
-    for year_temp in range(2000, 2021):
-        pop_block[year_temp - 2000] = pop_csv.values[idx][year_temp - 1998]
-        year_block[year_temp - 2000] = year_temp
-
-    # Some blocks have very fluctuating population number over time. This can be because policy changes or city
-    # construction, which is hard to predict over long time periods. Here the fluctuation rate is set to 20% of
-    # the average population number. If the change is more than that value, use another predict algorithm.
-
-    # diff: the difference of max and min data of population
-    diff = max(pop_block.max() - pop_block.mean(), pop_block.mean() - pop_block.min())
-
-    def func1(x, k, b):
-        return k * x + b
-
-    popt1, pcov1 = curve_fit(func1, year_block, pop_block)
-
-    # max_..., min_...: the max and min data of the fitting graph
-    max_pop_data_block = max(popt1[0] * 2000 + popt1[1], popt1[0] * 2020 + popt1[1])
-    min_pop_data_block = min(popt1[0] * 2000 + popt1[1], popt1[0] * 2020 + popt1[1])
-
-    if abs(diff - (max_pop_data_block - min_pop_data_block)) / pop_block.mean() <= 0.20:
-        # if the fluctuation rate is less than 20%, use regression algorithm directly
-        return popt1[0] * year + popt1[1]
-    else:
-        # if the fluctuation rate is more than 20%, use another algorithm
-        # TODO: try to find a better fitting method, now the regression method is still being used
-        return popt1[0] * year + popt1[1]
 
 
 def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonProject/data/',
                      filename='pop_dsy_merged.csv'):
     """Return a list, which contains all the index in the .csv file corresponding to the given coordinates.
     The given coordinates should be in the form of (min-lon, min-lat)[left-bottom], (max-lon, max-lat)[right-top].
-    :param float lon: the longitude of the point
+    Normally, it takes about 1,2 seconds to find an index in the .csv file.
+    If it is necessary, the code inside this function should be replaced in multithread way.
+    :param float lon: The longitude of the point
     :param float lat: the latitude of the point
     :param str data_path: the path, in which the merged .csv file is stored
     :param str filename: the filename of the .csv file
@@ -168,7 +124,7 @@ def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonP
     return idx
 
 
-def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
+def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
                         csv_file="C:/Users/86781/PycharmProjects/pythonProject/data/pop_dsy_merged.csv"):
     """Use the input longitude and latitude, find all related blocks' index.
     :param csv_file: The data source,
@@ -176,8 +132,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
     :param float lat_min: the minimum latitude of the points,
     :param float lon_max: the maximum longitude of the points,
     :param float lat_max: the maximum latitude of the points,
-    :param int mode: if the population data in area 2 is needed, give this parameter as 2, or default as 1 for area 0
-                     and area 1 only,
+    :param int mode: mode 1: for area 0 and 1 only; mode 2 for area 0, 1 and 2
     :return: three(two) lists of block indexes, corresponding to area 0,1 and 2 and their corresponding coordinates
              (both geo and cartesian)."""
 
@@ -234,15 +189,6 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
     area_2_cc_list_lon = []
     area_2_cc_list_lat = []
 
-
-    # print the interim result, for test only
-    print('--------------------------------------------------------------------------------------------------')
-    print(f'Area 0 side lengths: {span_lon} * {span_lat}')
-    print(f'Area 1 side lengths: {span_lon + 2 * area_1_add} * {span_lat + 2 * area_1_add}')
-    print(f'Area 2 side lengths: {span_lon + 2 * area_1_add + 2 * area_2_add} * {span_lat + 2 * area_1_add + 2 * area_2_add}')
-    print(f'{(span_lon + 2 * area_1_add + 2 * area_2_add) * (span_lat + 2 * area_1_add + 2 * area_2_add)} blocks involved.')
-    print('--------------------------------------------------------------------------------------------------')
-
     # check mode integrity
     if mode == 1 or mode == 2:
         pass
@@ -250,11 +196,21 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
         print('Mode instruction error, please check your input.')
         return 0
 
+    # print the interim result, for test only
+    print('--------------------------------------------------------------------------------------------------')
+    print(f'Area 0 side lengths: {span_lon} * {span_lat}')
+    print(f'Area 1 side lengths: {span_lon + 2 * area_1_add} * {span_lat + 2 * area_1_add}')
+    print(f'Area 2 side lengths: {span_lon + 2 * area_1_add + 2 * area_2_add} * {span_lat + 2 * area_1_add + 2 * area_2_add}')
+    print(f'{(span_lon + 2 * area_1_add + 2 * area_2_add) * (span_lat + 2 * area_1_add + 2 * area_2_add)} blocks involved.')
+    if mode == 1:
+        print(f'In your chosen mode, {(span_lon + 2 * area_1_add)*(span_lat + 2 * area_1_add)} blocks need to be processed.')
+    print('--------------------------------------------------------------------------------------------------')
+
     # For mode 1, only the population data in area 0 and area 1 is needed. So here
     if mode == 1:
         # use loops to get all needed blocks' indexes, p_min coordinates(0,0)
-        for lon_count in range(-area_1_add, span_lon + area_1_add + 1):
-            for lat_count in range(-area_1_add, span_lat + area_1_add + 1):
+        for lon_count in range(-area_1_add, span_lon + area_1_add):
+            for lat_count in range(-area_1_add, span_lat + area_1_add):
 
                 # calculate the block coordinates
                 block_lon = lon_min + lon_count * 0.008333
@@ -284,7 +240,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
                     area_1_cc_list_lat.append(lat_count)
                     # print('Block in area 1.')
                 print('---------------------------------------------------------------------')
-                print('Blocks info written.')
+                print(f'{(lon_count+area_1_add)*(span_lat+2*area_1_add)+(lat_count+area_1_add+1)} out of {(span_lon+2*area_1_add)*(span_lat+2*area_1_add)} blocks info written.')
 
         return area_0_ID_list,area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon,area_0_cc_list_lat, \
             area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat
@@ -292,8 +248,8 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
     # For mode 2, all involved blocks are searched.
     if mode == 2:
         # use loops to get all needed blocks' indexes, p_min coordinates(0,0)
-        for lon_count in range(-(area_1_add+area_2_add), span_lon + area_1_add + area_2_add + 1):
-            for lat_count in range(-(area_1_add+area_2_add), span_lat + area_1_add + area_2_add + 1):
+        for lon_count in range(-(area_1_add+area_2_add), span_lon + area_1_add + area_2_add):
+            for lat_count in range(-(area_1_add+area_2_add), span_lat + area_1_add + area_2_add):
 
                 # calculate the block coordinates
                 block_lon = lon_min + lon_count * 0.008333
@@ -313,6 +269,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
                     area_0_cc_list_lon.append(lon_count)
                     area_0_cc_list_lat.append(lat_count)
                     # print('Block in area 0.')
+
                 # check if the block is in area 1
                 elif -area_1_add <= lon_count <= span_lon + area_1_add - 1 and -area_1_add <= lat_count <= span_lat + area_1_add - 1:
                     area_1_ID_list.append(ID_block)
@@ -321,6 +278,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
                     area_1_cc_list_lon.append(lon_count)
                     area_1_cc_list_lat.append(lat_count)
                     # print('Block in area 1.')
+
                 # otherwise, the block is in area 1
                 else:
                     area_2_ID_list.append(ID_block)
@@ -330,8 +288,10 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode=1,
                     area_2_cc_list_lat.append(lat_count)
                     # print('Block in area 2.')
                 print('---------------------------------------------------------------------')
-                print('Blocks info written.')
-        return area_0_ID_list,area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon,area_0_cc_list_lat, \
+                print(f'{(lon_count+area_1_add+area_2_add)*(span_lat+2*area_1_add+2*area_2_add)+(lat_count+area_1_add+area_2_add+1)} out of {(span_lon+2*area_1_add+2*area_2_add)*(span_lat+2*area_1_add+2*area_2_add)} blocks info written.')
+
+    print('test')
+    return area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, \
             area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
             area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
 
@@ -375,3 +335,4 @@ def get_test_area_info(lon1, lat1, lon2, lat2, year):
     return area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, list_blocks_pop_area0, \
         area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, list_blocks_pop_area1, \
         area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
+

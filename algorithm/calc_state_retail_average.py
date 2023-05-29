@@ -51,7 +51,7 @@ def get_state_num_from_state_name(state_name):
 
 
 def get_retail_average(predict_year, predict_state, data_filename='C:/Users/86781/PycharmProjects/pythonProject/data/BIP und Einkommen.xlsx'):
-    """This funktion is used to calculate the relationship between GDP of a german state and its population.
+    """This function is used to calculate the relationship between GDP of a german state and its population.
     Then use the input state name and year to predict the state's retail sale average amount (Euro/per person).
     Then in other scripts, this value can be used to multiply the predicted population in the chosen test area and
     get the retail amount for the area. To achieve the goal, an Excel file containing the relevant data is applied,

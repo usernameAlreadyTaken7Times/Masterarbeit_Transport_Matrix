@@ -201,8 +201,8 @@ class AddressToCoordinatesMultiWaysHandler(osmium.SimpleHandler):
                             if all(self.nodes_id[:, 1] != 0):
                                 self.finish = True
                                 # TODO: find a way to stop the osmium class when the searching process finish and jump out
-                                reader.close(self)
-                                # self.handler.stop()
+                                # reader.close(self)
+                                self.handler.stop()
                             break
                         else:
                             continue
@@ -305,12 +305,14 @@ class AddressToCoordinatesRelationHandler(osmium.SimpleHandler):
     def relation(self, r):
         if 'addr:city' in r.tags and 'name' in r.tags:
 
+            city_match = self.searching_name_city.lower() == r.tags['addr:city'].lower()
+            name_match = self.searching_name_name.lower() in r.tags['name'].lower().split()
             street_match = False
 
             if 'addr:street' in r.tags:
                 street_match = self.searching_name_street.lower() == r.tags['addr:street'].lower()
-            city_match = self.searching_name_city.lower() == r.tags['addr:city'].lower()
-            name_match = self.searching_name_name.lower() in r.tags['name'].lower().split()
+
+
 
             if name_match and city_match:
                 if street_match:
