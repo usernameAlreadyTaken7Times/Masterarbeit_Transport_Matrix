@@ -1,5 +1,5 @@
 from algorithm.calc_state_retail_average import get_retail_average
-from algorithm.calc_test_area_pop import get_test_area_pop_whole
+from algorithm.get_test_area_pop import get_test_area_pop_whole
 
 
 # year, state, area_coordinates

@@ -35,15 +35,16 @@ maximum longitute and latitude from shop list
 
 ### 2.3 use the 2.2 blocks' geo coordinates to search for other involved shops' coordinates
 
-blocks' coordinates from 2.2
+blocks' coordinates from 2.2, +-0.0415?(half block side length)
+
+`alternative_Nominatim.Nominatim_find_shops`
 
 
 #### 2.3.1 from Nominativ Server
 
 search for all shop list in certain area
 
-`alternative_Nominativ`
-`???`
+`alternative_Nominatim.Nominatim_find_shops`
 
 #### 2.3.2 from .pbf file
 
@@ -55,6 +56,7 @@ from .osm.pbf, google grade into a .xlsx file
 `osm_object_Methods`
 `???`
 
+**TBD**
 
 ## 3. calculate every shop attraction influence using attractiveness formula with shop information from 2.4
 
