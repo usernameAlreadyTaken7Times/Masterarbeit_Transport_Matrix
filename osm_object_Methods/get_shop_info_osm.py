@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import osmium
 
+from IO.excel_input import load_excel
 
 def get_shop_info_osm(lon, lat, bbox,
                   osm_file="C:/Users/86781/PycharmProjects/pythonProject/data/osm/germany-latest.osm.pbf",
@@ -17,5 +18,10 @@ def get_shop_info_osm(lon, lat, bbox,
      :return: TBD,
      :rtype: TBD.
     """
+    excel_file = load_excel(xlsx_file, "stores")
+
+
+
+
 
     pass

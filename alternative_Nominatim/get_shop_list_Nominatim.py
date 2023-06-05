@@ -27,17 +27,19 @@ def shop_list_to_excel(req, path='C:/Users/86781/PycharmProjects/pythonProject/d
     return 0
 
 
-def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstreetmap.org"):
+def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstreetmap.org", mode=0):
     """Use Nominatim server to generate the shop list within the given area.
     :param float lon1: Minimum longitude of the test area,
     :param float lat1: minimum latitude of the test area,
     :param float lon2: maximum longitude of the test area,
     :param float lat2: maximum latitude of the test area,
-    :param str server_ip: the Nominatim server's ip, if not specified, online Nominatim service will be used.
+    :param str server_ip: the Nominatim server's ip, if not specified, online Nominatim service will be used,
+    :param int mode: the searching mode you want to use: mode=0: No shop keyword needed, use default "Supermarket";
+    mode=1: use your keywords.(Keywords need to be stored in this function before)
     """
 
-    # For security reason, https is used here. However, it could raise problems, when the local Nominatim server only
-    # supports http connections.
+    # For security reason, https is used here.
+    # However, it could raise problems when the local Nominatim server only supports http connections.
     url = "https://" + server_ip + "/search.php"
 
     # The bounding box of the test area(area 0, 1 and 2)
@@ -46,9 +48,9 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
     # new demand.
     viewbox = f"{str(lon1)},{str(lat2)},{str(lon2)},{str(lat1)}"
 
-    # search query, for retail, query is set to all shop names as default
+    # search query, for retail, query is set to "Supermarket" as default
     # TODO: find more shop names to meet the demand of "retail"
-    query = ["Rewe", "Edeka", "Aldi", "Lidi"]
+    query = ["Supermarket", "Rewe", "Edeka", "Aldi", "Lidi"]
 
     # for online service, use smaller limit for querying
     if server_ip == "nominatim.openstreetmap.org":
@@ -56,12 +58,25 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
     else:
         limit = 100
 
-    req = []
+    # for mode 1, all keywords in the array will be used to search for matching objects.
+    # TODO: mode 1 still has error when a few loops finish, TBD
+    if mode == 1:
+        req = []
+        for shop_num in range(1, len(query)):
+            url_params = url + f"?q={query[shop_num]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0" \
+                               f"&countrycodes" \
+                                f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
+            req += requests.get(url_params).json()
 
-    for shop_num in range(0, len(query)):
-        url_params = url + f"?q={query[shop_num]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0&countrycodes" \
+    # for mode 0, only search for the keyword "Supermarket"
+    elif mode == 0:
+        req = []
+        url_params = url + f"?q={query[0]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0&countrycodes" \
                            f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
-        req += requests.get(url_params).json()
+        req = requests.get(url_params).json()
+    else:
+        print("Mode error. Please check your mode, it should be either 0 or 1.")
+        return 0
 
     if req:
         shop_list_to_excel(req)
@@ -69,3 +84,6 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
     else:
         print('No shops found in the chosen area. Please check your input coordinates and retry.')
         return 0
+
+# # test code
+# get_shop_list_Nominatim(10.46843, 52.25082, 10.53718, 52.27246, mode=1)

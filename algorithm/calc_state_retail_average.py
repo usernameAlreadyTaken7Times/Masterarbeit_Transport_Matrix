@@ -8,49 +8,54 @@ from IO.excel_input import load_excel
 def get_state_num_from_state_name(state_name):
     # use the input state name to find a corresponding state index
     name = state_name
-    if isinstance(name, str):
-        print("Input type not match. please use string instead.")
+    state_num = -1
+
+    # check if the input name is a string
+    if not isinstance(name, str):
+        print("Input type error. please use string instead.")
         return -1
-    if name.lower() == "baden-württemberg" or name.lower() == "baden-wuerttemberg":
-        state_num = 1
-    elif name.lower() == "bayern":
-        state_num = 2
-    elif name.lower() == "berlin":
-        state_num = 3
-    elif name.lower() == "brandenburg":
-        state_num = 4
-    elif name.lower() == "bremen":
-        state_num = 5
-    elif name.lower() == "hamburg":
-        state_num = 6
-    elif name.lower() == "hessen":
-        state_num = 7
-    elif name.lower() == "mecklenburg-vorpommern":
-        state_num = 8
-    elif name.lower() == "niedersachsen":
-        state_num = 9
-    elif name.lower() == "nordrhein-westfalen":
-        state_num = 10
-    elif name.lower() == "rheinland-pfalz":
-        state_num = 11
-    elif name.lower() == "saarland":
-        state_num = 12
-    elif name.lower() == "sachsen":
-        state_num = 13
-    elif name.lower() == "sachsen-anhalt":
-        state_num = 14
-    elif name.lower() == "schleswig-holstein":
-        state_num = 15
-    elif name.lower() == "thüringen" or name.lower() == "thueringen":
-        state_num = 16
     else:
-        print("state name not match. please check your input.")
-        state_num = -1
+        if name.lower() == "baden-württemberg" or name.lower() == "baden-wuerttemberg":
+            state_num = 1
+        elif name.lower() == "bayern":
+            state_num = 2
+        elif name.lower() == "berlin":
+            state_num = 3
+        elif name.lower() == "brandenburg":
+            state_num = 4
+        elif name.lower() == "bremen":
+            state_num = 5
+        elif name.lower() == "hamburg":
+            state_num = 6
+        elif name.lower() == "hessen":
+            state_num = 7
+        elif name.lower() == "mecklenburg-vorpommern":
+            state_num = 8
+        elif name.lower() == "niedersachsen":
+            state_num = 9
+        elif name.lower() == "nordrhein-westfalen":
+            state_num = 10
+        elif name.lower() == "rheinland-pfalz":
+            state_num = 11
+        elif name.lower() == "saarland":
+            state_num = 12
+        elif name.lower() == "sachsen":
+            state_num = 13
+        elif name.lower() == "sachsen-anhalt":
+            state_num = 14
+        elif name.lower() == "schleswig-holstein":
+            state_num = 15
+        elif name.lower() == "thüringen" or name.lower() == "thueringen":
+            state_num = 16
+        else:
+            print("state name not match. please check your input.")
+            state_num = -1
 
     return state_num
 
 
-def get_retail_average(predict_year, predict_state, data_filename='C:/Users/86781/PycharmProjects/pythonProject/data/BIP und Einkommen.xlsx'):
+def get_retail_average(predict_year, predict_state, data_filename='C:/Users/86781/PycharmProjects/pythonProject/data'
+                                                                  '/BIP und Einkommen.xlsx'):
     """This function is used to calculate the relationship between GDP of a german state and its population.
     Then use the input state name and year to predict the state's retail sale average amount (Euro/per person).
     Then in other scripts, this value can be used to multiply the predicted population in the chosen test area and
@@ -60,10 +65,11 @@ def get_retail_average(predict_year, predict_state, data_filename='C:/Users/8678
     the data and third, forecast value acquiring: use the given year to output the predict retail amount and population
     of the chosen state and time.
 
-    :param int predict_year: The year you want to predict
-    :param str predict_state: the german state you want to predict
-    :param str data_filename: the .xlsx file containing the BIP_handel, BIP_je_Person and Population data
-    :return: the BIP_Handel je Person at the time point of the chosen year, chosen state, unit of measurement Euro/Person
+    :param int predict_year: The year you want to predict,
+    :param str predict_state: the german state which you want to predict,
+    :param str data_filename: the .xlsx file containing the BIP_handel, BIP_je_Person and Population data,
+    :return: the BIP_Handel je Person at the time point of the chosen year, chosen state, unit of measurement
+     Euro/Person.
     """
 
     # ------------------------------------------------------1-init------------------------------------------------------
@@ -73,15 +79,16 @@ def get_retail_average(predict_year, predict_state, data_filename='C:/Users/8678
 
     # BIP_handel is the GDP with german industry division standard 'WZ 2008',
     # item 'Handel; Instandhaltung und Reparatur von Kraftfahrzeugen (G)'. The data is from 'www.statistikportal.de' and
-    # shows the sale amount of 'Einzelhandel' in every state of Germany. However, the data is only avaivable from 2008
-    # to 2020, but so the data of year 2021 and 2022 for other variables(BIP_je_Person, Einwohner) are discarded.
+    # shows the sale amount of 'Einzelhandel' in every state of Germany. However, the data is only available from 2008
+    # to 2020, so the data of year 2021 and 2022 and before 2008 for other variables(BIP_je_Person, Einwohner) are
+    # discarded.
     BIP_handel = load_excel(retail_xlsx_filename, 'BIPhandel')
     # BIP_handel data for state init
     BIP_handel_state = np.zeros(len(BIP_handel) - 5)
 
-    # BIP_je_Person is the GDP in every state divides its population number. Likewise, the data is also from german
-    # statistic department. In this program, this value together with the BIP_handel, can be used to determine and
-    # predict the sale amount for a specific year.
+    # BIP_je_Person is the GDP in every state divides its population number. Likewise, the data is also from the
+    # german statistics department. In this program, these values, together with the BIP_handel, can be used to
+    # determine and predict the sale amount for a specific year.
     BIP_je_Person = load_excel(retail_xlsx_filename, 'BIPjePerson')
     # BIP_je_Person data for state init
     BIP_je_Person_state = np.zeros(len(BIP_handel) - 5)
@@ -97,9 +104,13 @@ def get_retail_average(predict_year, predict_state, data_filename='C:/Users/8678
     # use an index to determine the state
     state_num = get_state_num_from_state_name(state)
 
-    # use a cycle to read all relevant data of the chosen state, these array indexes' numbers are based on the format of
-    # the original xlsx file containing the data, which was directly copied from the website of Deutsche Statistiksamt,
+    # Use a loop to read all relevant data of the chosen state.
+    # These array indexes' numbers are based on the format of
+    # the original xlsx file containing the data,
+    # which was directly copied from the website of Deutsche Statistiksamt,
     # so the format could be a little messy.
+    # Noted: because the BIP_handel's data in only available from 2008 to 2020, so all predictions are based on the
+    # data in that period.
     for year_tmp in range(5, len(BIP_handel)):
         BIP_handel_state[year_tmp - 5] = float(BIP_handel.values[year_tmp][state_num])
         BIP_je_Person_state[year_tmp - 5] = float(BIP_je_Person.values[year_tmp + 17][state_num])

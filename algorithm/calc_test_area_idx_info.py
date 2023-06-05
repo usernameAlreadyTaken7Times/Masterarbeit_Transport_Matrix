@@ -136,6 +136,16 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
     :return: three(two) lists of block indexes, corresponding to area 0,1 and 2 and their corresponding coordinates
              (both geo and cartesian)."""
 
+    # Because the bounding box has different format(here lon_min, lat_min, lon_max, lat_max),
+    # Nominatim(left, top, right, bottom), so here is necessary to check if these coordinates
+    # have the right order.
+    if lon_min <= lon_max and lat_min <= lat_max:
+        pass
+    else:
+        print("Please check your input coordinates, the order may be wrong.")
+        return 0
+
+
     # input the coordinates to find their index in .csv file
     pmin_idx = get_index_in_csv(lon_min, lat_min)
     pmax_idx = get_index_in_csv(lon_max, lat_max)
@@ -290,7 +300,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
                 print('---------------------------------------------------------------------')
                 print(f'{(lon_count+area_1_add+area_2_add)*(span_lat+2*area_1_add+2*area_2_add)+(lat_count+area_1_add+area_2_add+1)} out of {(span_lon+2*area_1_add+2*area_2_add)*(span_lat+2*area_1_add+2*area_2_add)} blocks info written.')
 
-    print('test')
+    print('All blocks\' indexes found.')
     return area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, \
             area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
             area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
@@ -304,7 +314,7 @@ def get_test_area_info(lon1, lat1, lon2, lat2, year):
     :param float lon2: the maximum longitude of the points,
     :param float lat2: the maximum latitude of the points,
     :param int year: the year of the to-predict area,
-    :return: lists of involved areas' blocks' csv index ID,
+    :return: lists of involved areas' blocks' csv indexes ID,
     geo-coordinates, cartesian coordinates and predict population.
     """
 
@@ -325,14 +335,15 @@ def get_test_area_info(lon1, lat1, lon2, lat2, year):
     list_blocks_pop_area1 = []
 
     # get all involved blocks' population in area 0
-    for area_ID in range(0, len(area_0_ID_list)):
-        list_blocks_pop_area0.append(get_block_pop(area_0_ID_list[area_ID], year))
+    for area_ID1 in range(0, len(area_0_ID_list)):
+        list_blocks_pop_area0.append(get_block_pop(area_0_ID_list[area_ID1], year))
+        print(f"Calculating {area_ID1+1} out of {len(area_0_ID_list)+len(area_1_ID_list)} blocks\' population.")
 
     # get all involved blocks' population in area 1
-    for area_ID in range(0, len(area_1_ID_list)):
-        list_blocks_pop_area1.append(get_block_pop(area_1_ID_list[area_ID], year))
+    for area_ID2 in range(0, len(area_1_ID_list)):
+        list_blocks_pop_area1.append(get_block_pop(area_1_ID_list[area_ID2], year))
+        print(f"Calculating {len(area_0_ID_list)+area_ID2+1} out of {len(area_0_ID_list)+len(area_1_ID_list)} blocks\' population.")
 
     return area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, list_blocks_pop_area0, \
         area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, list_blocks_pop_area1, \
         area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
-

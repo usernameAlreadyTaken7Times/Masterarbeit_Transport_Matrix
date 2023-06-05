@@ -1,11 +1,11 @@
 import osmium
 
 
-def get_multicoordinate_from_multiaddress(address_list, file):
+def get_multicoordinate_from_multiaddress(address_list, pbf_file):
     """
     Get the coordinates lists from the address list, using local .pbf file and python packages for searching.
-    :param list address_list: A list of address, should be the form of address_list[num] = [housenumber, street, city, name],
-    :param str file: the to-be-searched .pbf file,
+    :param list address_list: A list of address which should be the form of address_list[num] = [housenumber, street, city, name],
+    :param str pbf_file: the to-be-searched .pbf file,
     :return coordinates: the coordinates of the to-be-searched address,
      in the form of coordinates[num] = [lon, lat],
     :return bounding_box: the bounding box of the to-be-searched address,
@@ -18,12 +18,13 @@ def get_multicoordinate_from_multiaddress(address_list, file):
 
     for num in range(0, len(address_list)):
         GCA = get_coordinate_from_address(address_list[num][0], address_list[num][1], address_list[num][2], address_list[num][3])
-        GCA.apply_file(file)
+        GCA.apply_file(pbf_file)
 
         coordinates.append([GCA.address[2], GCA.address[3]])
         bounding_box.append([GCA.bounding_box[0], GCA.bounding_box[1], GCA.bounding_box[2], GCA.bounding_box[3]])
 
     return coordinates, bounding_box
+
 
 class get_coordinate_from_address(osmium.SimpleHandler):
     """This method can be used to match the given address to the coordinates in an osm.pbf file. However, due to the
@@ -73,11 +74,6 @@ class get_coordinate_from_address(osmium.SimpleHandler):
 
         if 'addr:street' in n.tags and 'addr:housenumber' in n.tags and 'addr:city' in n.tags and 'name' in n.tags:
 
-            city_match = False
-            street_match = False
-            housenumber_match = False
-            name_match = False
-
             # other elements should be matched, while the name should just in the node tag
             street_match = self.searching_name_street == n.tags['addr:street']
             housenumber_match = self.searching_name_housenumber == n.tags['addr:housenumber']
@@ -108,11 +104,6 @@ class get_coordinate_from_address(osmium.SimpleHandler):
 
         if 'addr:street' in w.tags and 'addr:housenumber' in w.tags and 'addr:city' in w.tags and 'name' in w.tags:
 
-            city_match = False
-            street_match = False
-            housenumber_match = False
-            name_match = False
-
             street_match = self.searching_name_street == w.tags['addr:street']
             housenumber_match = self.searching_name_housenumber == w.tags['addr:housenumber']
             city_match = self.searching_name_city == w.tags['addr:city']
@@ -141,11 +132,6 @@ class get_coordinate_from_address(osmium.SimpleHandler):
         used and only fit for the relations that have 'street', 'housenumber', 'city' and 'name' tags together.
         :param r: Relation.
         """
-
-        city_match = False
-        street_match = False
-        housenumber_match = False
-        name_match = False
 
         if 'addr:street' in r.tags and 'addr:housenumber' in r.tags and 'addr:city' in r.tags and 'name' in r.tags:
 

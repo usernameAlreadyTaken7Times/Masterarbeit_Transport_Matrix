@@ -3,5 +3,6 @@ venv/
 __pycache__/
 data/
 .idea/
+osm_object_Methods/cache/
 
 *.json

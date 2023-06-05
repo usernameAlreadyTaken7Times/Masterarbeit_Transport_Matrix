@@ -10,7 +10,9 @@ def get_test_area_pop_whole(lon1, lat1, lon2, lat2, year):
     :param float lon2: the maximum longitude of the points,
     :param float lat2: the maximum latitude of the points,
     :param int year: the year of the to-predict area,
-    :return: the population of area 0 and area 1."""
+    :return: the population of area 0 and area 1, unit of measurement people.
+    :rtype: float
+    """
 
     temp_area_info = get_test_area_info(lon1, lat1, lon2, lat2, year)
 
