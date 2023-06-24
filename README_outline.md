@@ -4,6 +4,8 @@
 
 get all parameters ready
 
+TBD: conf. file
+
 ## 2. get involved shop information
 
 
@@ -34,7 +36,9 @@ due to (unkonwn)_**(really?)**_ coordinates of the shop, all
 
 `alternative_osm.get_coordinate_from_address`
 
-##### _TBD_ 
+**_TBD_** 
+
+need to be rearranged
 
 The main functions already exist but still need to be 
 adjusted to fit the main program's demand.
@@ -60,23 +64,27 @@ blocks' coordinates from 2.2, +-0.0415?(half block side length)
 
 search for all shops' list in certain area
 
-`alternative_Nominatim.Nominatim_find_shops`
+`alternative_Nominatim.get_shop_list_Nominatim`
 
 #### 2.4.2 from .pbf file
 
 use the 2.3 osm file to traverse and coordinates as bounding box
+
+`alternative_osm.get_shop_list_osm`
 
 **TBD**
 
 ### 2.5 use the 2.1&2.4 coordinates to get shop information from .pbf file (area, facility, grade etc.)
 
 from .osm.pbf, google grade into a .xlsx file
-`osm_object_Methods`
-`???`
+
+`osm_object_Methods.get_shop_info`
 
 **TBD**
 
 ## 3. calculate every shop attraction influence using attractiveness formula with shop information from 2.5
+
+`algorithm.calc_shop_attraction`
 
 **TBD**
 
@@ -94,7 +102,15 @@ other.
 
 **TBD**
 
+### 4.3 Huff Method calculation
+
+**TBD**
+
 ## 5. get retail amount and cargo volume
+
+### 5.0 preprocess the BIP_handel from 2 statistic source
+
+`IO.Pre_process_BIP_handel`
 
 ### 5.1 use .csv file and data fitting to get average retail sale amount on prediction year for the chosen state
 
@@ -102,16 +118,13 @@ other.
 
 ### 5.2 get test district whole retail amount on prediction year(5.1*population on blocks)
 
-`algorithm.calc_test_area_retail`
+`algorithm.get_test_area_retail`
 
-### 5.3 use Inflation rate to get standard retail amount
+### 5.3 use Inflation rate to get standard retail amount and mark_concern percentage
 
-inflation rate csv/xlsx file?
-
-retail / business proportion?
-
-**TBD**
 `algorithm.get_test_area_retail_inflation_correction`
+`algorithm.get_test_area_markanteil_correction`
+
 
 ### 5.4 apply the 4 possibility to the retail amount
 
@@ -119,10 +132,24 @@ retail / business proportion?
 
 ### 5.5 Convert the payment to the quantity of goods(on prediction year)
 
-need money-volumn relationship
+need fund-volume relationship
 
 **TBD**
 
 ## 6. consider changes within a year(seasonal difference and holiday influence)
+
+**TBD**
+
+## 7. use map to find matching driving paths through shops
+
+IS route planning a part of the job?
+(use the shop coordinates and find one/multi way/ways through
+all shops)
+
+external api and server?
+
+**TBD**
+
+## 8. Optional: UI for the tool?
 
 **TBD**

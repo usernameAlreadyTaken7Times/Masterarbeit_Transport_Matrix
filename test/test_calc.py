@@ -15,13 +15,13 @@ from algorithm.get_test_area_retail import get_test_area_retail
 # a = get_area_blocks_idx(9.9046415, 53.457823, 9.9120015, 53.4650054, 2)
 
 # a = get_test_area_info(9.9046415, 53.457823, 9.9120015, 53.4650054, 2023)
-# b = get_test_area_pop_whole(9.9046415, 53.457823, 9.9120015, 53.4650054, 2023)
+b = get_test_area_pop_whole(9.9046415, 53.457823, 9.9120015, 53.4650054, 2023)
 
 
 # Nominatim_find_shops(10.5091, 52.2599, 10.5250, 52.2690)
 # get_shop_list_Nominatim(10.46843,52.27246,10.53718,52.25082)
 
 
-retail = get_test_area_retail(2023, "Niedersachsen", 10.46843, 52.25082, 10.53718, 52.27246)
+# retail = get_test_area_retail(2023, "Niedersachsen", 10.46843, 52.25082, 10.53718, 52.27246)
 
 pass

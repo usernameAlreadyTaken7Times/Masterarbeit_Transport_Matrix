@@ -41,3 +41,4 @@ def osm_extract_from_pbf(min_lon, min_lat, max_lon, max_lat, osm_tool_path,
 
 # # test code
 # osm_extract_from_pbf(10.46843, 52.25082, 10.53718, 52.27246, 'C:/Users/86781/anaconda3/Library/bin/')
+# pass

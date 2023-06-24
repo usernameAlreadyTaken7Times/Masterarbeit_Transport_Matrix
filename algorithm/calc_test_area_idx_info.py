@@ -77,6 +77,8 @@ def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonP
                 break
 
             # find the blocks where the points of input coordinates are in
+            # Noted: the blocks have the side length of 0.0083333, so to match a block in binary search, half length
+            # should be added here
             if lat > csv.values[index[mid]][1] + 0.004167:
                 right = mid - 1
                 right_active = True
@@ -101,7 +103,7 @@ def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonP
         return k_down + 1, k_up - 1
 
     def search_idx_lon(idx_min, idx_max, lon, csv):
-        # the longitudes are not arranged by order, so a traverse is unavoidable
+        # the longitudes are not arranged by order, so a traverse is eventually unavoidable
         for idx_temp in range(idx_min, idx_max + 1):
             if csv.values[idx_temp][0] - 0.004167 < lon < csv.values[idx_temp][0] + 0.004167:
                 break

@@ -34,8 +34,9 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
     :param float lon2: maximum longitude of the test area,
     :param float lat2: maximum latitude of the test area,
     :param str server_ip: the Nominatim server's ip, if not specified, online Nominatim service will be used,
-    :param int mode: the searching mode you want to use: mode=0: No shop keyword needed, use default "Supermarket";
-    mode=1: use your keywords.(Keywords need to be stored in this function before)
+    :param int mode: the searching mode you want to use: mode=0: No shop keyword needed, use default keyword
+    "Supermarket"; mode=1: use your keywords(Keywords need to be stored in this function before), mode=2: use keyword
+     "shop".
     """
 
     # For security reason, https is used here.
@@ -50,7 +51,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
 
     # search query, for retail, query is set to "Supermarket" as default
     # TODO: find more shop names to meet the demand of "retail"
-    query = ["Supermarket", "Rewe", "Edeka", "Aldi", "Lidi"]
+    query = ["Supermarket", "Shop", "Rewe", "Edeka", "Aldi", "Lidi"]
 
     # for online service, use smaller limit for querying
     if server_ip == "nominatim.openstreetmap.org":
@@ -59,10 +60,10 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
         limit = 100
 
     # for mode 1, all keywords in the array will be used to search for matching objects.
-    # TODO: mode 1 still has error when a few loops finish, TBD
+    # TODO: mode 1 still has error when a few loops finish, TBD, but in most cases mode 0's work is already fine
     if mode == 1:
         req = []
-        for shop_num in range(1, len(query)):
+        for shop_num in range(2, len(query)):
             url_params = url + f"?q={query[shop_num]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0" \
                                f"&countrycodes" \
                                 f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
@@ -74,9 +75,21 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
         url_params = url + f"?q={query[0]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0&countrycodes" \
                            f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
         req = requests.get(url_params).json()
+
+    # for mode 2, only search for the keyword "shop"
+    elif mode == 2:
+        req = []
+        url_params = url + f"?q={query[1]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0&countrycodes" \
+                           f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
+        req = requests.get(url_params).json()
     else:
-        print("Mode error. Please check your mode, it should be either 0 or 1.")
+        print("Mode error. Please check your mode, it should be either 0 or 1 or 2.")
         return 0
+
+    # TODO: if return more than limit(50/100) how to do?
+    # cut the query area into smaller area and retry
+
+
 
     if req:
         shop_list_to_excel(req)
@@ -86,4 +99,5 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
         return 0
 
 # # test code
-# get_shop_list_Nominatim(10.46843, 52.25082, 10.53718, 52.27246, mode=1)
+# get_shop_list_Nominatim(13.0621, 52.3777, 13.8764, 52.6664)
+# pass
