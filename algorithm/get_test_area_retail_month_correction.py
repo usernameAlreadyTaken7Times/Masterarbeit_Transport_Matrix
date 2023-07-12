@@ -53,11 +53,13 @@ def get_state_num_from_state_name(state_name):
     return state_num
 
 
-def get_test_area_retail_month_correction(test_area_retail, month, state,
-                                          monatsanteil_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data/Monatanteil.xlsx"):
+def get_test_area_retail_month_correction(test_area_retail, year, month, state,
+                                          monatsanteil_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data"
+                                                                 "/Monatanteil.xlsx"):
     """Use the input test area retail amount, month and the corresponding german state to calculate the sale amount of
     the given month.
     :param float test_area_retail: The uncorrected test area business trade amount,
+    :param int year: the to-be-predicted year,
     :param int month: the to-be-predicted month,
     :param string state: the name of german state, in which the test area is located,
     :param str monatsanteil_xlsx_file: file path and name of the .xlsx file containing month percentage data of the
@@ -72,39 +74,54 @@ def get_test_area_retail_month_correction(test_area_retail, month, state,
         print('Retail data of test area format error. Please check your input.')
         return 0
 
+    if 2025 >= year >= 2000:
+        pass
+    else:
+        print('Year beyond limitation. Please check and retry.')
+        return 0
+
     if isinstance(month, int):
         pass
     else:
         print('Input month format error. Please check and retry.')
         return 0
 
-
-
-    # load the data from .xlsx files, here the sheet name should be the same as those in the .xlsx files
-    anteil = load_excel(monatsanteil_xlsx_file, "monat_anteil")
-
-    # set a function to deal with the percentages in antiel .xlsx file and transform those into decimal
-    def parseFloat(str):
-        try:
-            return float(str)
-        except:
-            str = str.strip()
-            # if is percentage
-            if str.endswith("%"):
-                return float(str.strip("%").strip()) / 100
-            raise Exception("Cannot parse %s" % str)
-
     if 12 >= month >= 1:
         pass
     else:
         print('Month beyond limitation. Please check and retry.')
 
+    # load the data from .xlsx files, here the sheet name should be the same as those in the .xlsx files
+    anteil = load_excel(monatsanteil_xlsx_file, "monat_anteil")
 
+    state_num = get_state_num_from_state_name(state)
 
+    # check if the month percentage data is available for the chosen state and year
+    data_available = True
 
+    if year < 2017 or year > 2022:
+        data_available = False
+    else:
+        for month_temp in range(1, 13):
+            if str(anteil.values[(state_num - 1) * 8 + year - 2016][month_temp]) == 'nan':
+                data_available = False
 
+    retail_year = []
+    if data_available:  # the data is available in the .xlsx file
+        for month_temp2 in range(1, 13):
+            # store the retail amount of the whole year
+            retail_year.append(anteil.values[(state_num - 1) * 8 + year - 2016][month_temp2])
+        pect = anteil.values[(state_num - 1) * 8 + year - 2016][month] / sum(retail_year)
+    else:  # the date is not available in the .xlsx file
+        # gather the pattern of retail for the chosen state in year 2017, because that is the only year whose info is
+        # always there
+        for month_temp2 in range(1, 13):
+            # store the retail amount of the whole year
+            retail_year.append(anteil.values[(state_num - 1) * 8 + 1][month_temp2])
+        pect = anteil.values[(state_num - 1) * 8 + 1][month] / sum(retail_year)
 
+    return test_area_retail * pect
 
-# test code
-a = get_test_area_retail_month_correction(100, 2024)
-pass
+# # test code
+# a = get_test_area_retail_month_correction(100,2020, 11, 1)
+# pass

@@ -78,7 +78,8 @@ use the 2.3 osm file to traverse and coordinates as bounding box
 
 from .osm.pbf, google grade into a .xlsx file
 
-`osm_object_Methods.get_shop_info`
+`osm_object_Methods.get_shop_info_osm`
+`osm_object_Methods.get_shop_way_ref_osm_xml`
 
 **TBD**
 
@@ -86,7 +87,6 @@ from .osm.pbf, google grade into a .xlsx file
 
 `algorithm.calc_shop_attraction`
 
-**TBD**
 
 ## 4. use Huff Method to calculate the possibility for population on each block to go to a specific shop
 
@@ -94,17 +94,17 @@ from .osm.pbf, google grade into a .xlsx file
 
 `osm_object_Methodes.get_route_distance`
 
-### 4.2 analyse the relationship between different marks (Rewe-Lidi, Commodity substitution rate)
+### ~~4.2 analyse the relationship between different marks (Rewe-Lidi, Commodity substitution rate)~~
 
-use wholesale amount / retail store number = avg(Brand_shop)
+~~use wholesale amount / retail store number = avg(Brand_shop)
 and take that shop information as default to compare with each
-other.
+other.~~
 
-**TBD**
+~~**TBD**~~
 
 ### 4.3 Huff Method calculation
 
-**TBD**
+`algorithm.get_test_area_customer_shop_possibility`
 
 ## 5. get retail amount and cargo volume
 
@@ -128,6 +128,8 @@ other.
 
 ### 5.4 apply the 4 possibility to the retail amount
 
+`algorithm.get_test_area_customer_shop_possibility`
+
 **TBD**
 
 ### 5.5 Convert the payment to the quantity of goods(on prediction year)
@@ -138,7 +140,8 @@ need fund-volume relationship
 
 ## 6. consider changes within a year(seasonal difference and holiday influence)
 
-**TBD**
+
+`algorithm.get_test_area_retail_month_correction`
 
 ## 7. use map to find matching driving paths through shops
 
@@ -148,7 +151,13 @@ all shops)
 
 external api and server?
 
+**VRP Problem/ local genetic algorithm**
+
 **TBD**
+
+`algorithm.VRP`
+
+testcode `test.VRP_test_code`
 
 ## 8. Optional: UI for the tool?
 

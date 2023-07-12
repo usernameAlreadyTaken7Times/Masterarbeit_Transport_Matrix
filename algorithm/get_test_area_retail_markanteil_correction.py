@@ -45,6 +45,7 @@ def get_test_area_retail_markanteil_correction(test_area_retail, year,
         pass
     else:
         print('Year beyond limitation. Please check and retry.')
+        return 0
 
     anteil_decimal = []
     year_decimal = []
