@@ -2,7 +2,7 @@ from xml.dom.minidom import parse
 import xml.dom.minidom
 
 from shapely.geometry import Point
-from shapely.geometry.polygon import Polygon
+# from shapely.geometry.polygon import Polygon
 
 from math import radians, sin, cos, sqrt, atan2
 from shapely.geometry import Polygon
@@ -13,8 +13,10 @@ import numpy as np
 def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street_list, osm_file, tlr, lon_org, lat_org,
                          check_node=1, predict_node_boundary=0, keyword_as_supermarket=0):
     """
-     As a supplement to the osm search program, this program uses Python to directly process the osm file in xml format
-     and return the id of the store way(if available).
+     As a supplement to the osm search program,
+     this program uses Python to directly process the osm file in xml format
+     and return the building areas for a list of the chosen store way(if available),
+     as well as their infrastructure grades.
 
      :param list lon_list: The longitude list of the shop ways,
      :param list lat_list: the latitude list of the shop ways,
@@ -29,10 +31,10 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
      :param int check_node: the searching mode of this osmium program: if check_node=0 (default), it only searches for
       the ways that have a 'shop' tag; if check_node=1, search for every way's inside nodes and check if they have a
       shop tag and represent a shop,
-     :param int predict_node_boundary: if the shop is a node and not part of a way, then the area can not be
-      calculated. Then if predict_node_boundary=1, then the program will loop to find the smallest way containing the shop node and
-      use the way's area as shop area. If predict_node_boundary=0, the program will use a standard shop area, 80m^2.
-      Default predict_node_boundary=0,
+     :param int predict_node_boundary: if the shop is found as a node and not part of a way, then the area can not be
+      calculated. Then if predict_node_boundary=1, then the program will loop to find the smallest way containing the
+      shop node and use the way's area as shop area. If predict_node_boundary=0, the program will use a standard shop
+      area, 80m^2. Default predict_node_boundary=0,
      :param int keyword_as_supermarket: the searching keyword condition, weather use a "Supermarket" or just "shop".
      In an .osm file, the range of an element with a "shop" tag is rather wide: it does not have to be a retail shop.
      So if you want to make it strict, then you can set keyword_as_supermarket=1, and it means force use "Supermarket"
@@ -291,8 +293,6 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
             print('The shop with the given information can not be found. Use a sample shop data instead.')
 
         return shop_match, node_temp
-
-
 
     def haversine(lon1, lat1, lon2, lat2):
         """This function uses haversine formula to calculate the distance from given coordinates
@@ -625,6 +625,8 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
 
     for shop_num in range(len(lon_list)):  # search for every shop record
 
+        print(f"Searching for the {str(shop_num+1)}st shop's information in .osm file, total {len(lon_list)} shops.")
+
         # the area and influence of the shop's infrastructure, and will be directly applied to the building area
         # of the shop
         area = 0
@@ -853,7 +855,7 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
             area_list.append(area)
             factor_list.append(factor)
 
-        # for test's visualization only
+        # for testing only
         print(f'shop building area {str(area)} added.')
         print(f'shop attraction {str(factor)} added.')
         print('----------------------')

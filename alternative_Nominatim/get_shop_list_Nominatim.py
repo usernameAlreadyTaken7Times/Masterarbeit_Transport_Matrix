@@ -1,13 +1,16 @@
+import time
+
 import requests
 import pandas as pd
 import os
 
 
-def shop_list_to_excel(req, path='C:/Users/86781/PycharmProjects/pythonProject/data/', filename='test_area_shops.xlsx'):
+def shop_list_to_excel(req, path, filename, sheet):
     """write the request json data from Nominatim server into an .xlsx file.
     :param list req: the json data contains shop list info,
-    :param str path: the path, in which the store .xlsx file should be stored,
-    :param str filename: the filename of .xlsx file.
+    :param str path: the path, in which the shop .xlsx file should be stored,
+    :param str filename: the filename of .xlsx file,
+    :param str sheet: the sheet name of the .xlsx file.
     """
     # delete the file that already exists
     if os.path.exists(path + filename):
@@ -22,18 +25,21 @@ def shop_list_to_excel(req, path='C:/Users/86781/PycharmProjects/pythonProject/d
         excel_file.at[row, "lat"] = float(req[row]["lat"])
         excel_file.at[row, "address"] = req[row]["display_name"]
 
-    excel_file.to_excel(path + filename, sheet_name="stores", index=False)
+    excel_file.to_excel(path + filename, sheet_name=sheet, index=False)
     print('Data written to .xlsx file.')
     return 0
 
 
-def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstreetmap.org", mode=0):
+def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, sheet, mode=0):
     """Use Nominatim server to generate the shop list within the given area.
     :param float lon1: Minimum longitude of the test area,
     :param float lat1: minimum latitude of the test area,
     :param float lon2: maximum longitude of the test area,
     :param float lat2: maximum latitude of the test area,
     :param str server_ip: the Nominatim server's ip, if not specified, online Nominatim service will be used,
+    :param str path: the path, in which the .xlsx file should be stored,
+    :param str filename: the filename of .xlsx file,
+    :param str sheet: the sheet name of the .xlsx file,
     :param int mode: the searching mode you want to use: mode=0: No shop keyword needed, use default keyword
     "Supermarket"; mode=1: use your keywords(Keywords need to be stored in this function before), mode=2: use keyword
      "shop".
@@ -85,7 +91,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
     if server_ip == "nominatim.openstreetmap.org":
         limit = 50
     else:
-        limit = 100
+        limit = 2000
 
     # the bounding box of the test area (area 0, 1 and 2)
     # Noted: the bounding box from the previous program is in the format of (min_lon, min_lat, max_lon, max_lat),
@@ -122,7 +128,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
 
                 if result_num < limit:
                     if lon_num == 1 and lat_num == 1:  # end the loop
-                        shop_list_to_excel(req)  # write the results into .xlsx file
+                        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
                         return 0
                     else:
                         pass
@@ -130,6 +136,9 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
                     print(f'A subarea has more than {limit} shops inside. Trying to use smaller areas.')
                     breaker = True
                     break  # jump out the inner loop
+
+                time.sleep(1)
+                time.sleep(1)
 
         print('4 areas are still not enough. Trying to spilt it into 9 smaller areas (3 * 3).')
         req = []
@@ -149,7 +158,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
 
                 if result_num < limit:
                     if lon_num == 2 and lat_num == 2:  # end the loop
-                        shop_list_to_excel(req)  # write the results into .xlsx file
+                        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
                         return 0
                     else:
                         pass
@@ -157,14 +166,17 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip="nominatim.openstr
                     print(f'A subarea still has more than {limit} shops inside. Please change your input coordinates.')
                     return 0
 
+                time.sleep(1)
+                time.sleep(1)
+
     elif result_num == 0:
         print('No shops found in the chosen area. Please check your input coordinates or keywords and retry.')
         return 0
     else:
         req = req_temp
-        shop_list_to_excel(req)  # write the results into .xlsx file
+        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
         return 0
 
-# test code
-get_shop_list_Nominatim(10.51849, 52.26068, 10.53121, 52.26522)
-pass
+# # test code
+# get_shop_list_Nominatim(10.51849, 52.26068, 10.53121, 52.26522)
+# pass

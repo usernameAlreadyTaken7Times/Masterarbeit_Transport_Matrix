@@ -40,8 +40,6 @@ def get_shop_attraction(shop_xlsx="C:/Users/86781/PycharmProjects/pythonProject/
         area[shop_num] = xls.values[shop_num][3]
         factor[shop_num] = xls.values[shop_num][4]
 
-        # read other relevant data from .xlsx file
-
         # calculate the shop attraction
         attc[shop_num] = pow(area[shop_num], k_area) * factor[shop_num]
 

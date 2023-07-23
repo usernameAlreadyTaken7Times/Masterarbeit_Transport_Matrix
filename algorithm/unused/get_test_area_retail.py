@@ -1,5 +1,5 @@
 from algorithm.calc_state_retail_average import get_retail_average
-from algorithm.get_test_area_pop import get_test_area_pop_whole
+from algorithm.unused.get_test_area_pop import get_test_area_pop_whole
 
 def get_test_area_retail(year, state, lon1, lat1, lon2, lat2):
     """Get the test area's whole retail amount for the given state and year.

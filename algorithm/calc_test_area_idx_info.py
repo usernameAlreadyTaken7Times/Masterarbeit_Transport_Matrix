@@ -109,7 +109,8 @@ def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonP
                 break
         return idx_temp
 
-    # TODO: how to catch exceptions when a set of coordinates cannot be found in the .csv file?
+    # Here, we assume all sets of coordinates can be found in the .csv file.
+    # In other words, the provided coordinates always point to a place inside Germany.
 
     # first use the existing lat dictionary to determine a basic range of the indexes
     index = get_search_lat_list(lat)
@@ -123,22 +124,26 @@ def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonP
 
     if idx == -1:
         print('An error occurred. Please make sure the coordinates you put in is valid.')
+        return 0
+
     return idx
 
 
-def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
+def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode=2,
                         csv_file="C:/Users/86781/PycharmProjects/pythonProject/data/pop_dsy_merged.csv"):
     """Use the input longitude and latitude, find all related blocks' index.
     :param csv_file: The data source,
-    :param float lon_min: the minimum longitude of the points,
-    :param float lat_min: the minimum latitude of the points,
-    :param float lon_max: the maximum longitude of the points,
-    :param float lat_max: the maximum latitude of the points,
-    :param int mode: mode 1: for area 0 and 1 only; mode 2 for area 0, 1 and 2
+    :param float lon_min: the minimum longitude of the shop points,
+    :param float lat_min: the minimum latitude of the shop points,
+    :param float lon_max: the maximum longitude of the shop points,
+    :param float lat_max: the maximum latitude of the shop points,
+    :param bool test_mode: weather the program is in test mode or not, default=True
+    :param int mode: mode 1: for area 0 and 1 only; mode 2 for area 0, 1 and 2, by default mode=2,
     :return: three(two) lists of block indexes, corresponding to area 0,1 and 2 and their corresponding coordinates
-             (both geo and cartesian)."""
+             (both geo and cartesian).
+    """
 
-    # Because the bounding box has different format(here lon_min, lat_min, lon_max, lat_max),
+    # Because the bounding box has different formats (here lon_min, lat_min, lon_max, lat_max),
     # Nominatim(left, top, right, bottom), so here is necessary to check if these coordinates
     # have the right order.
     if lon_min <= lon_max and lat_min <= lat_max:
@@ -164,6 +169,12 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
     span_lon = round((csv.values[pmax_idx][0] - csv.values[pmin_idx][0]) / 0.008333) + 1
     span_lat = round((csv.values[pmax_idx][1] - csv.values[pmin_idx][1]) / 0.008333) + 1
 
+    '''
+    This part of code determines the expansion of the test areas. However, a big test area also significantly
+    increases the hardware burden and consumes much much more time than usual. So unless in final calculation process, 
+    the area_1_add and area_2_add should be kept at a low level to raise program efficiency. 
+    '''
+
     # Here, different test areas will be determined.
     # Area 0 is the square, in which all the shops are located; Note: it also contains blocks with no shop in it.
     # Area 1 is the outer region. People and shops inside area 1 will be counted for simulation.
@@ -171,11 +182,17 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
     area_1_add = int(0.15 * (span_lat + span_lon) / 2)
     area_2_add = int(0.20 * (span_lat + span_lon) / 2)
 
-    # set the min outer regions of the test area 1 & 2, here are set to 3 blocks and 2 blocks
-    if area_1_add <= 3:
-        area_1_add = 3
-    if area_2_add <= 1:
-        area_2_add = 2
+    # in the so-called test_mode, the area_1 and area_2's expand is significantly reduced to save calculation power.
+    if test_mode:
+        area_1_add = 1
+        area_2_add = 1
+    else:
+        # set the min outer regions of the test area 1 & 2, here are set to 3 blocks and 2 blocks
+        if area_1_add <= 3:
+            area_1_add = 3
+        if area_2_add <= 1:
+            area_2_add = 2
+
 
     # csv ID list init
     area_0_ID_list = []
@@ -212,9 +229,10 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
     print('--------------------------------------------------------------------------------------------------')
     print(f'Area 0 side lengths: {span_lon} * {span_lat}')
     print(f'Area 1 side lengths: {span_lon + 2 * area_1_add} * {span_lat + 2 * area_1_add}')
-    print(f'Area 2 side lengths: {span_lon + 2 * area_1_add + 2 * area_2_add} * {span_lat + 2 * area_1_add + 2 * area_2_add}')
-    print(f'{(span_lon + 2 * area_1_add + 2 * area_2_add) * (span_lat + 2 * area_1_add + 2 * area_2_add)} blocks involved.')
-    if mode == 1:
+    if mode == 2:
+        print(f'Area 2 side lengths: {span_lon + 2 * area_1_add + 2 * area_2_add} * {span_lat + 2 * area_1_add + 2 * area_2_add}')
+        print(f'{(span_lon + 2 * area_1_add + 2 * area_2_add) * (span_lat + 2 * area_1_add + 2 * area_2_add)} blocks involved.')
+    elif mode == 1:
         print(f'In your chosen mode, {(span_lon + 2 * area_1_add)*(span_lat + 2 * area_1_add)} blocks need to be processed.')
     print('--------------------------------------------------------------------------------------------------')
 
@@ -307,29 +325,24 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, mode,
             area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
             area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
 
-def get_test_area_info(lon1, lat1, lon2, lat2, year):
+def get_test_area_info(lon1, lat1, lon2, lat2, year, test_mode):
     """This function is used to gather information of the test area base on the regression of historical data.
     The information contains the blocks' ID in .csv file, their geo-coordinates, cartesian coordinates and also
     predicted population.
-    :param float lon1: The minimum longitude of the points,
-    :param float lat1: the minimum latitude of the points,
-    :param float lon2: the maximum longitude of the points,
-    :param float lat2: the maximum latitude of the points,
+    :param float lon1: The minimum longitude of the shop points,
+    :param float lat1: the minimum latitude of the shop points,
+    :param float lon2: the maximum longitude of the shop points,
+    :param float lat2: the maximum latitude of the shop points,
     :param int year: the year of the to-predict area,
+    :param bool test_mode: weather the program is in test mode or not, default=True
     :return: lists of involved areas' blocks' csv indexes ID,
     geo-coordinates, cartesian coordinates and predict population.
     """
 
-    # get different area blocks' ID, only one of these two sentiments is needed.
-
-    # area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, \
-    #     area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat \
-    #     = get_area_blocks_idx(lon1, lat1, lon2, lat2, 1)
-
     area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, \
         area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
         area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat \
-        = get_area_blocks_idx(lon1, lat1, lon2, lat2, 2)
+        = get_area_blocks_idx(lon1, lat1, lon2, lat2, test_mode, 2)
 
 
     # blocks pop init

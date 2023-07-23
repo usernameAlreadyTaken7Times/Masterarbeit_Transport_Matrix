@@ -1,14 +1,7 @@
 
 
-def abc(a):
-    def bcd(a):
-        print(a)
-        print('inside')
-        return 0
+class abc:
+    ab = 1
+    ac = 2
+    bc = 3
 
-
-    print(a)
-    return 0
-
-abc('sfefe')
-pass

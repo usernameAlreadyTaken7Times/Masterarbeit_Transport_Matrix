@@ -53,6 +53,10 @@ def get_route_distance(osm_file, block_cen_lon, block_cen_lat, shop_lon, shop_la
     distance = nx.shortest_path_length(G, origin_node, destination_node, weight='length')
     # print(f"The driving distance is {distance} meters.")
 
+    # make sure the distance is always not 0, because it may be denominators
+    if distance == 0 or distance == 0.0:
+        distance = 0.3
+
     # the driving time between these two points
     time = distance * 3.6 / 40
     # print(f "The driving time is {time} seconds.")

@@ -32,9 +32,9 @@ def add_shop_info_column_to_excel(input_excel, sheet_name, info_column, info_nam
     for row in range(len(excel)):
         for column_num in range(len(excel.columns) + 1):
             if column_num < len(excel.columns):
-                excel_file_temp.at[row, excel.columns.values[column_num]] = excel.values[row][column_num]
+                excel_file_temp.at[row, column[column_num]] = excel.values[row][column_num]
             elif column_num == len(excel.columns):
-                excel_file_temp.at[row, excel.columns.values[column_num]] = info_column[row]
+                excel_file_temp.at[row, column[column_num]] = info_column[row]
 
     # write the data back
     excel_file_temp.to_excel(input_excel, sheet_name=sheet_name, index=False)
@@ -42,7 +42,7 @@ def add_shop_info_column_to_excel(input_excel, sheet_name, info_column, info_nam
 
 
 def add_shop_record_to_excel(input_excel, sheet_name, info_row_1, info_row_2, info_row_3):
-    """This function aims to write one shop data record into an existing .xlsx file.
+    """This function aims to write one/several shop data record into an existing .xlsx file.
 
     Noted: This function is only programmed to write one row of data for every time.
     If you want to write more than one column of data, please use loops and call this function more times.
@@ -78,8 +78,7 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
                       osm_file="C:/Users/86781/PycharmProjects/pythonProject/data/test_area.osm",
                       xlsx_file1="C:/Users/86781/PycharmProjects/pythonProject/data/shop_list_coordinates.xlsx",
                       xlsx_file2="C:/Users/86781/PycharmProjects/pythonProject/data/test_area_shops.xlsx",
-                      xlsx_file_sheet1="stores", xlsx_file_sheet2="stores",
-                      previous_searching_method="Nominatim"):
+                      xlsx_file_sheet1="stores", xlsx_file_sheet2="stores"):
     """This function is used to get the shop information from .osm.pbf file, in order to calculate their attractions
      in the following steps. The longitude and latitude should be able to be found in the .xlsx file, which was
      generated before by a script using Nominatim service or an .osm.pbf traversal program.
@@ -88,22 +87,15 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
      :param float bbox: The offset or tolerance of the coordinates, default as 0.0003. In the german region it is
       about 20m in longitude and about 33m in latitude,
      :param str osm_file: the .osm.pbf file, in which the shops' information is stored,
-     :param str xlsx_file1: the .xlsx file, generated from former script, containing geo-coordinates of the shops in
+     :param str xlsx_file1: the .xlsx file, provided from the very beginning, containing geo-coordinates of the shops in
       area 0, (only the ones whose cargo volume is going to be calculated)
-     :param str xlsx_file2: the .xlsx file, generated from former script, containing geo-coordinates of the shops in
-      area 0,1 and 2,
+     :param str xlsx_file2: the .xlsx file, generated from former Nominatim script, containing geo-coordinates of the
+      shops in area 0,1 and 2,
      :param str xlsx_file_sheet1: the workbook name of xlsx_file1,
-     :param str xlsx_file_sheet2: the workbook name of xlsx_file2,
-     :param str previous_searching_method: the searching method of the previous steps: can choose from "osm" or
-      "Nominatim", default as "Nominatim".
+     :param str xlsx_file_sheet2: the workbook name of xlsx_file2.
      :return: TBD,
      :rtype: TBD
     """
-
-    if previous_searching_method == "Nominatim" or previous_searching_method == "osm":
-        pass
-    else:
-        print('Please specify the previous searching method from "Nominatim" or "osm".')
 
     # check if the file exists
     if os.path.exists(xlsx_file1) and os.path.exists(xlsx_file2) and os.path.exists(osm_file):
@@ -179,12 +171,14 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
             shop_print_str = ''.join([shop_print_str, shop_0_unmatched_print[num_temp], ','])
 
         print(f'The {shop_print_str} shop/shops in area 0 (file 1) are not found in the shop list. '
-              f'Will write it to shop list for further searching.')
+              f'Will write it/them to shop list for further searching.')
 
         # write the data record of the missing shop to excel_2
         miss_log_lon = []
         miss_log_lat = []
         miss_log_address = []
+        excel_1_order = []  # this list should be used to store the order of the original shops in test area's shop list
+        num_temp2 = 0
 
         # build lists to store the missing shop's data
         for miss_log_num in range(len(area_0_num)):
@@ -193,16 +187,20 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
                 miss_log_lat.append(excel_file1.values[miss_log_num][1])
                 miss_log_address.append(excel_file1.values[miss_log_num][2])
 
+                excel_1_order.append(len(excel_file2)+num_temp2)
+                num_temp2 += 1
+            else:
+                excel_1_order.append(area_0_num[miss_log_num])
+
         # write the records to excel_file_2
         add_shop_record_to_excel(xlsx_file2, xlsx_file_sheet2, miss_log_lon, miss_log_lat, miss_log_address)
 
-    elif len(area_0_num) < len(excel_file1):
-        print('All shops\' coordinates found.')
     else:
-        # Normally this should not happen, or?
-        pass
+        print('All shops\' coordinates found.')
+        excel_1_order = area_0_num
 
-    # --------------------------------extinguish process finish--------------------------------------------------------
+
+    # --------------------------------extinguish process ends--------------------------------------------------------
 
     def extract_shop_details(address):
         """This function is used to separate the name, housenumber and street of a shop from its address string.
@@ -307,9 +305,9 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
     add_shop_info_column_to_excel(xlsx_file2, xlsx_file_sheet2, infra, 'infra_factor')
 
     print('All shops\' building area stored into the original .xlsx file.')
-    return 0
+    return excel_1_order
 
 
-# test code
-get_shop_info_osm(10.46843, 52.25082)
-pass
+# # test code
+# get_shop_info_osm(10.46843, 52.25082)
+# pass

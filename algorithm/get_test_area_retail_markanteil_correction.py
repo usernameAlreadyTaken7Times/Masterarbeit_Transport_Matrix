@@ -5,13 +5,15 @@ from IO.excel_input import load_excel
 
 
 def get_test_area_retail_markanteil_correction(test_area_retail, year,
-                                              markanteil_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data/Inflationsrate.xlsx"):
+                                              markanteil_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data/Inflationsrate.xlsx",
+                                              markanteil_xlsx_sheet="shop_anteil"):
     """Use the input for whole germany big business concerns' sale amount / whole retail sale amount
     file to converse the retail amount into standard retail amount for the test area.
     :param float test_area_retail: The uncorrected test area business trade amount,
     :param int year: the to-be-predicted year,
     :param str markanteil_xlsx_file: file path and name of the .xlsx file containing inflation data over the period,
-    :return: the corrected test area's retail amount, standard with year ....
+    :param str markanteil_xlsx_sheet: the corresponding file's sheet name,
+    :return: the corrected test area's retail amount, standard with year...
     """
 
     # check the input
@@ -28,7 +30,7 @@ def get_test_area_retail_markanteil_correction(test_area_retail, year,
         return 0
 
     # load the data from .xlsx files, here the sheet name should be the same as those in the .xlsx files
-    anteil = load_excel(markanteil_xlsx_file, "shop_anteil")
+    anteil = load_excel(markanteil_xlsx_file, markanteil_xlsx_sheet)
 
     # set a function to deal with the percentages in antiel .xlsx file and transform those into decimal
     def parseFloat(str):

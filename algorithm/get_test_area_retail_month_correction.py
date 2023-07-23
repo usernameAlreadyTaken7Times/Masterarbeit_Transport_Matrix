@@ -55,7 +55,8 @@ def get_state_num_from_state_name(state_name):
 
 def get_test_area_retail_month_correction(test_area_retail, year, month, state,
                                           monatsanteil_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data"
-                                                                 "/Monatanteil.xlsx"):
+                                                                 "/Monatanteil.xlsx",
+                                          monatsanteil_xlsx_sheet="monat_anteil"):
     """Use the input test area retail amount, month and the corresponding german state to calculate the sale amount of
     the given month.
     :param float test_area_retail: The uncorrected test area business trade amount,
@@ -64,6 +65,7 @@ def get_test_area_retail_month_correction(test_area_retail, year, month, state,
     :param string state: the name of german state, in which the test area is located,
     :param str monatsanteil_xlsx_file: file path and name of the .xlsx file containing month percentage data of the
     chosen state,
+    :param str monatsanteil_xlsx_sheet: the corresponding file's sheet name,
     :return: the corrected test area's monthly retail amount.
     """
 
@@ -92,7 +94,7 @@ def get_test_area_retail_month_correction(test_area_retail, year, month, state,
         print('Month beyond limitation. Please check and retry.')
 
     # load the data from .xlsx files, here the sheet name should be the same as those in the .xlsx files
-    anteil = load_excel(monatsanteil_xlsx_file, "monat_anteil")
+    anteil = load_excel(monatsanteil_xlsx_file, monatsanteil_xlsx_sheet)
 
     state_num = get_state_num_from_state_name(state)
 
@@ -123,5 +125,5 @@ def get_test_area_retail_month_correction(test_area_retail, year, month, state,
     return test_area_retail * pect
 
 # # test code
-# a = get_test_area_retail_month_correction(100,2020, 11, 1)
+# a = get_test_area_retail_month_correction(100, 2020, 11, 1)
 # pass

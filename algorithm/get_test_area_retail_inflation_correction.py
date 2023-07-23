@@ -2,13 +2,15 @@ from IO.excel_input import load_excel
 
 
 def get_test_area_retail_inflation_correction(test_area_retail, year, standard_year,
-                                              inflation_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data/Inflationsrate.xlsx"):
+                                              inflation_xlsx_file="C:/Users/86781/PycharmProjects/pythonProject/data/Inflationsrate.xlsx",
+                                              inflation_xlsx_sheet="inflation"):
     """Use the input whole test area retail amount, inflation rate of years and retail-business trade proportion
     file to converse the retail amount into standard retail amount for the test area.
     :param float test_area_retail: The uncorrected test area business trade amount,
     :param int year: the to-be-predicted year,
     :param int standard_year: the year that has cargo weight-price relationship available,
     :param str inflation_xlsx_file: file path and name of the .xlsx file containing inflation data over the period,
+    :param str inflation_xlsx_sheet: the corresponding file's sheet name,
     :return: the corrected test area's retail amount, standard with year ....
     """
 
@@ -26,7 +28,7 @@ def get_test_area_retail_inflation_correction(test_area_retail, year, standard_y
         return 0
 
     # load the data from .xlsx files, here the sheet name should be the same as those in the .xlsx files
-    inflation = load_excel(inflation_xlsx_file, "inflation")
+    inflation = load_excel(inflation_xlsx_file, inflation_xlsx_sheet)
 
     # set a function to deal with the percentages in inflation .xlsx file and transform those into decimal
     def parseFloat(str):

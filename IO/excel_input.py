@@ -20,3 +20,31 @@ def get_excel_celldata(filename, cell_row, cell_column, sheet='Tabelle1',
     data = pd.read_excel(path + filename, sheet_name=sheet)
     celldata = data.iloc[[cell_row], [cell_column]]
     return celldata
+
+
+def get_excel_address_state(filepath, sheet):
+    """This function aims only to return the state of the shops from a given .xlsx file."""
+
+    # the given .xlsx file is generated from the result of Nominatim server,
+    # so the third column is always the row with the state record.
+    data = pd.read_excel(filepath, sheet_name=sheet)
+    state_name = ["baden-württemberg", "baden-wuerttemberg", "bayern", "berlin",
+                  "brandenburg", "bremen", "hamburg", "hessen", "mecklenburg-vorpommern",
+                  "niedersachsen", "nordrhein-westfalen", "rheinland-pfalz", "saarland",
+                  "sachsen", "sachsen-anhalt", "schleswig-holstein", "thüringen", "thueringen"]
+
+    # Here we do not consider the situation that inside a .xlsx file, there are shops from different states
+    state = ""
+
+    for i in range(len(data)):
+        if data.values[i][2].split(", ")[-3].lower() in state_name:
+            state = data.values[i][2].split(", ")[-3].lower()
+        if state != "" and data.values[i][2].split(", ")[-3].lower() != state:
+            pass  # here just assume all shops are in the same state
+
+    if state != "":
+        return state
+    else:
+        print("State record error. Please input the state manually.")
+        state = input("state=?")
+        return state

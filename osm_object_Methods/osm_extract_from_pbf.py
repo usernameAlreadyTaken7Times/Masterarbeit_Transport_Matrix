@@ -9,7 +9,7 @@ def osm_extract_from_pbf(min_lon, min_lat, max_lon, max_lat, osm_tool_path,
                          osm_file_name="test_area.osm"):
     """This function can be used to extract data of a specific area whose coordinates should be given. Please note: the
     function involves command-line tool "osmium" and use it to extract data, so special characters, including spaces and
-     commas, should be checked before running thin function.
+    commas, should be checked before running thin function.
     :param float min_lon: The minimum longitude of the test square area,
     :param float min_lat: the minimum latitude of the test square area,
     :param float max_lon: the maximum longitude of the test square area,
@@ -39,6 +39,3 @@ def osm_extract_from_pbf(min_lon, min_lat, max_lon, max_lat, osm_tool_path,
     subprocess.run(cmd)
     print('.osm file extracted and stored.')
 
-# # test code
-# osm_extract_from_pbf(10.46843, 52.25082, 10.53718, 52.27246, 'C:/Users/86781/anaconda3/Library/bin/')
-# pass

@@ -55,7 +55,8 @@ def get_state_num_from_state_name(state_name):
 
 
 def get_retail_average(predict_year, predict_state,
-                       BIP_filename='C:/Users/86781/PycharmProjects/pythonProject/data/BIP und Einkommen.xlsx'):
+                       BIP_filename='C:/Users/86781/PycharmProjects/pythonProject/data/BIP und Einkommen.xlsx',
+                       BIP_filesheet='BIPhandel'):
     """This function is used to calculate the relationship between GDP of a german state and its population.
     Then use the input state name and year to predict the state's retail sale average amount (Euro/per person).
     Then in other scripts, this value can be used to multiply the predicted population in the chosen test area and
@@ -70,6 +71,7 @@ def get_retail_average(predict_year, predict_state,
         for period of 2008-2020, use historical data,
     :param str predict_state: the german state which you want to predict,
     :param str BIP_filename: the .xlsx file containing the BIP_handel, BIP_je_Person and Population data,
+    :param str BIP_filesheet: the .xlsx file sheet containing the BIP_handel, BIP_je_Person and Population data,
     :return: the BIP_Handel je Person at the time point of the chosen year, chosen state, unit of measurement
      Euro/Person.
     """
@@ -84,7 +86,7 @@ def get_retail_average(predict_year, predict_state,
     # shows the sale amount of 'Handel' in every state of Germany. However, the data is only available from 2008
     # to 2020, so the data of year 2021 and 2022 and before 2008 for other variables(BIP_je_Person, Einwohner) are
     # discarded.
-    BIP_handel = load_excel(retail_xlsx_filename, 'BIPhandel')
+    BIP_handel = load_excel(retail_xlsx_filename, BIP_filesheet)
     # BIP_handel data for state init
     BIP_handel_state = np.zeros(len(BIP_handel) - 5)
 
@@ -134,16 +136,16 @@ def get_retail_average(predict_year, predict_state,
         mode = 2
 
     # use historical data
-    if 2014 <= year <= 2020:
+    if 2014 <= year <= 2022:
         print(f'Input year is {str(year)}, using historical data from .csv file.')
         mode = 0
 
-    # use prediction data for Einwohnen, historical data for BIP_handel
-    elif 2021 <= year <= 2022:
-        print(f'Input year is {str(year)}, using predication data from .csv file.')
-        mode = 3
+    # # use prediction data for Einwohnen, historical data for BIP_handel
+    # elif 2021 <= year <= 2022:
+    #     print(f'Input year is {str(year)}, using predication data from .csv file.')
+    #     mode = 3
 
-    # use prediction data for BIP_handel,BIP_je_Person and Einwohnen.
+    # use prediction data for BIP_handel, BIP_je_Person and Einwohnen.
     elif 2023 <= year <= 2025:
         print(f'Input year is {str(year)}, using predication data and historical data from .csv file together.')
         mode = 1
@@ -202,11 +204,11 @@ def get_retail_average(predict_year, predict_state,
         '''
 
         # third, try to fit the ln(d) with W/P. Instead of rename it with two parameters; this function I will just use
-        # func3 because it is tooooooooooo annoying to describe it in the function name.
+        # func3 because it is way too annoying to describe it in the function name.
         def func3(x, kp, bp):
             return kp * x + bp
 
-        popt3, pcov3 = curve_fit(func3, np.log(BIP_je_Person_state), BIP_handel_state / Einwohner_state)
+        popt3, pcov3 = curve_fit(func3, np.log(BIP_je_Person_state)[6:], BIP_handel_state[6:] / Einwohner_state[6:])
 
         '''
         # these codes can be used to plot the np.log(BIP_je_Person_state) - BIP_handel_state / Einwohner_state relationship.

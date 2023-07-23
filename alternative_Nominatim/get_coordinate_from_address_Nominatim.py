@@ -29,12 +29,13 @@ def shop_list_to_excel(req, path='C:/Users/86781/PycharmProjects/pythonProject/d
     return 0
 
 
-def get_coordinate_from_address_Nominatim(shop_list, server_ip="nominatim.openstreetmap.org"):
+def get_coordinate_from_address_Nominatim(shop_list, server_ip="nominatim.openstreetmap.org", limitation=50):
     """This function can be used to transform the input shop names and addresses to their geo coordinates.
     :param list shop_list: The to-be-searched shop list, containing all names and addresses of the shops, and
     should be in the form of shop_list=[name, housenumber, street, city, state]. For this project, only
     valid addresses in Germany will be searched,
     :param str server_ip: the Nominatim server's ip, if not specified, online Nominatim service will be used,
+    :param int limitation: the Nominatim server's query limitation, only used for online service, default=50.
     :return: A modified shop list, in the form of new_shop_list=[lon, lat, address].
     """
 
@@ -44,9 +45,11 @@ def get_coordinate_from_address_Nominatim(shop_list, server_ip="nominatim.openst
 
     # for online service, use smaller limit for querying
     if server_ip == "nominatim.openstreetmap.org":
-        limit = 50
+        limit = limitation
     else:
-        limit = 100
+        # for local Nominatim service, the query limitation is set to 2000, and that should be enough for almost all
+        # situations
+        limit = 2000
 
     # extract shop data from shop_list
     name = []
@@ -138,8 +141,3 @@ def get_coordinate_from_address_Nominatim(shop_list, server_ip="nominatim.openst
 
     shop_list_to_excel(req)
     return 0
-
-
-# # test code
-# get_coordinate_from_address_Nominatim([['abc', '64', 'rebenring', 'Braunschweig', 'Niedersachsen'], ['abcd', '63', 'rebenring', 'Braunschweig', 'Niedersachsen'],['heimbs', '30', 'rebenring', 'Braunschweig', 'Niedersachsen']])
-# pass

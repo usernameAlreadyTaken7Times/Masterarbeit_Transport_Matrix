@@ -15,7 +15,7 @@ Normally, this step is not part of the project, because the coordinates
 of the test shops should be offered before the program starts in a
 .xlsx file.
 
-Or the original file could only contain name and address of 
+Or the original file could only contain the name and address of 
 the shops. Under such circumstances, 2.1 is necessary.
 
 #### 2.1.1 from Nominatim Server
@@ -24,7 +24,7 @@ Use the IMN's Nominatim server to search for the coordinates(fast).
 However, some coordinates point on Nominatim can differ from those
 in .osm.pbf files. So in this case, an offset of coordinates.(+-0.003)
 
-`alternative_Nominativ.get_coordinate_from_Nominatim`
+`alternative_Nominativ.get_coordinate_from_address_Nominatim`
 
 
 #### 2.1.2 from .pbf file
@@ -36,7 +36,7 @@ due to (unkonwn)_**(really?)**_ coordinates of the shop, all
 
 `alternative_osm.get_coordinate_from_address`
 
-**_TBD_** 
+~~(backup)~~
 
 need to be rearranged
 
@@ -47,7 +47,7 @@ adjusted to fit the main program's demand.
 
 maximum longitude and latitude from shop list
 
-`algorith.calc_test_area_info`
+`algorith.calc_test_area_idx_info`
 
 ### 2.3 use the involved blocks' coordinates and extract the test area's osm file
 
@@ -57,7 +57,7 @@ maximum longitude and latitude from shop list
 
 blocks' coordinates from 2.2, +-0.0415?(half block side length)
 
-`alternative_Nominatim.Nominatim_find_shops`
+`alternative_Nominatim.get_shop_list_Nominatim`
 
 
 #### 2.4.1 from Nominatim Server
@@ -72,7 +72,7 @@ use the 2.3 osm file to traverse and coordinates as bounding box
 
 `alternative_osm.get_shop_list_osm`
 
-**TBD**
+(backup)
 
 ### 2.5 use the 2.1&2.4 coordinates to get shop information from .pbf file (area, facility, grade etc.)
 
@@ -81,7 +81,6 @@ from .osm.pbf, google grade into a .xlsx file
 `osm_object_Methods.get_shop_info_osm`
 `osm_object_Methods.get_shop_way_ref_osm_xml`
 
-**TBD**
 
 ## 3. calculate every shop attraction influence using attractiveness formula with shop information from 2.5
 
@@ -158,7 +157,3 @@ external api and server?
 `algorithm.VRP`
 
 testcode `test.VRP_test_code`
-
-## 8. Optional: UI for the tool?
-
-**TBD**
