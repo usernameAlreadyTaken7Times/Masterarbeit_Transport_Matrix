@@ -199,7 +199,6 @@ def get_shop_info_osm(lon_org, lat_org, bbox=0.0003,
         print('All shops\' coordinates found.')
         excel_1_order = area_0_num
 
-
     # --------------------------------extinguish process ends--------------------------------------------------------
 
     def extract_shop_details(address):

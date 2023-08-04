@@ -45,24 +45,36 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
      "shop".
     """
 
+    # Para init
+    # For security reason, https is used here.
+    # However, it could raise problems when the local Nominatim server only supports http connections.
+    # In such case, please change the transfer protocol back to http://.
+    url = "https://" + server_ip + "/search.php"
+
+    # search query, for retail, query is set to "Supermarket" as default
+    query = ["Supermarket", "Shop", "Rewe", "Edeka", "Aldi", "Lidi", "Rossmann","ikea", "Tchibo", "dm", "Karstadt",
+             "Douglas", "Kaufland", "OBI", "C&A", "Fielmann", "Deichmann", "Weltbild", "Otto", "H&M", "Saturn", "Real",
+             "Kaufhof", "Hornbach", "Netto", "Fressnapf", "Esprit", "Neckermann", "Thalia", "Bauhaus", "Media Markt",
+             "S. Oliver", "Zalando", "Penny", "Müller", "Apollo Optik", "NewYorker", "Praktiker", "Intersport",
+             "Karstadt Sports"]
+
+    # for online service, use smaller limit for querying
+    if server_ip == "nominatim.openstreetmap.org":
+        limit = 50
+    else:
+        limit = 2000
+
     def main_cal(url, query, viewbox, limit, mode):
-        # This is the main querying program for Nominatim.
-        # It raises a request to the server and gets results from it.
-        # For code's readability, this part of code is separated from other code blocks and placed in the
-        # beginning of the function.
+        """This is the main querying program for Nominatim.
+         It raises a request to the server and gets results from it.
+         For code's readability, this part of code is separated from other code blocks and placed in the
+         beginning of the function.
 
-        # for mode 1, all keywords in the array will be used to search for matching objects.
-        # mode 1 still has error when a few loops finish, TBD, but in most cases mode 0's work is already fine
+         Please note: this function is not fit for mode 1.
+         """
         req = []
-        if mode == 1:
-            for shop_num in range(2, len(query)):
-                url_params = url + f"?q={query[shop_num]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0" \
-                                   f"&countrycodes" \
-                                   f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
-                req += requests.get(url_params).json()
 
-        # for mode 0, only search for the keyword "Supermarket"
-        elif mode == 0:
+        if mode == 0:
             url_params = url + f"?q={query[0]}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0&countrycodes" \
                                f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
             req = requests.get(url_params).json()
@@ -73,110 +85,196 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
                                f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
             req = requests.get(url_params).json()
         else:
-            print("Mode error. Please check your mode, it should be either 0 or 1 or 2.")
+            print("Mode error. Please check your mode, it should be either 0 or 2.")
             return 0
 
         return req, len(req)
 
-    # Para init
-    # For security reason, https is used here.
-    # However, it could raise problems when the local Nominatim server only supports http connections.
-    # In such case, please change the transfer protocol back to http://.
-    url = "https://" + server_ip + "/search.php"
 
-    # search query, for retail, query is set to "Supermarket" as default
-    query = ["Supermarket", "Shop", "Rewe", "Edeka", "Aldi", "Lidi"]
+    def main_cal_mode1(url, query, viewbox, limit):
+        """Like the one function before, this function only works for mode1, which involves more than one keyword.
+        """
 
-    # for online service, use smaller limit for querying
-    if server_ip == "nominatim.openstreetmap.org":
-        limit = 50
-    else:
-        limit = 2000
+        # for mode 1, all keywords in the array will be used to search for matching objects.
+        # mode 1 still has error when a few loops finish, TBD, but in most cases mode 0's work is already fine
+        req = []
+
+        url_params = url + f"?q={query}&polygon_geojson=1&viewbox={viewbox}&bounded=1&dedupe=0" \
+                           f"&countrycodes" \
+                           f"=de&limit={str(limit)}&polygon_threshold=1&format=jsonv2"
+        req += requests.get(url_params).json()
+
+        return req, len(req)
 
     # the bounding box of the test area (area 0, 1 and 2)
-    # Noted: the bounding box from the previous program is in the format of (min_lon, min_lat, max_lon, max_lat),
-    # while the grammar of Nominatim is (left, top, right, bottom).
-    # So here the view-box should make change to meet the new demand.
+    # noted: the bounding box from the previous program is in the format of (min_lon, min_lat, max_lon, max_lat),
+    # while the grammar of Nominatim is (left, top, right, bottom)
+    # so here the view-box should make change to meet the new demand.
     viewbox = f"{str(lon1)},{str(lat2)},{str(lon2)},{str(lat1)}"
 
-    # run the querying part first time
-    req_temp, result_num = main_cal(url, query, viewbox, limit, mode)
+    # with one simple keyword (mode 0 or mode 2), use such method as below
+    if mode == 0 or mode == 2:
+        # run the querying part first time
+        req_temp, result_num = main_cal(url, query, viewbox, limit, mode)
 
-    # If the request is more than the limit, then cut the query area into smaller area (half) and retry.
-    if result_num == limit:
+        # If the request is more than the limit, then cut the query area into smaller area (half) and retry.
+        if result_num == limit:
 
-        print('Area is too big, trying to spilt it into 4 smaller areas (2 * 2).')
-        req = []
+            print('Area is too big, trying to spilt it into 4 smaller areas (2 * 2).')
+            req = []
 
-        # try to split the area into 4 parts and do the querying for each part separately
-        breaker = False  # an exit for breaking inner loop
-        for lon_num in range(0, 2):
-            for lat_num in range(0, 2):
-
+            # try to split the area into 4 parts and do the querying for each part separately
+            breaker = False  # an exit for breaking inner loop
+            for lon_num in range(0, 2):
                 if breaker:
-                    break  # jump out the outer loop and go to the next loop of 9 areas
+                    break  # jump out the outer loop and go to the next loop of 36 areas
 
-                # set the new viewbox
-                lon_begin = lon1 + (lon2 - lon1) / 2 * lon_num
-                lon_end = lon1 + (lon2 - lon1) / 2 * (lon_num + 1)
-                lat_begin = lat1 + (lat2 - lat1) / 2 * lat_num
-                lat_end = lat1 + (lat2 - lat1) / 2 * (lat_num + 1)
-                viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
+                for lat_num in range(0, 2):
 
-                req_temp, result_num = main_cal(url, query, viewbox_part, limit, mode)
+                    # set the new viewbox
+                    lon_begin = lon1 + (lon2 - lon1) / 2 * lon_num
+                    lon_end = lon1 + (lon2 - lon1) / 2 * (lon_num + 1)
+                    lat_begin = lat1 + (lat2 - lat1) / 2 * lat_num
+                    lat_end = lat1 + (lat2 - lat1) / 2 * (lat_num + 1)
+                    viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
+
+                    req_temp, result_num = main_cal(url, query, viewbox_part, limit, mode)
+                    req += req_temp
+
+                    if result_num < limit:
+                        if lon_num == 1 and lat_num == 1:  # end the loop
+                            shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
+                            return 0
+                        else:
+                            pass
+                    else:
+                        print(f'A subarea has more than {limit} shops inside. Trying to use smaller areas.')
+                        breaker = True
+                        break  # jump out the inner loop
+
+                    time.sleep(1)
+                    time.sleep(1)
+
+            print('4 areas are still not enough. Trying to spilt it into 36 smaller areas (6 * 6).')
+            req = []
+
+            # try to split the area into 36 parts and do the querying for each part separately
+            for lon_num in range(0, 6):
+                for lat_num in range(0, 6):
+                    # set the new viewbox
+                    lon_begin = lon1 + (lon2 - lon1) / 6 * lon_num
+                    lon_end = lon1 + (lon2 - lon1) / 6 * (lon_num + 1)
+                    lat_begin = lat1 + (lat2 - lat1) / 6 * lat_num
+                    lat_end = lat1 + (lat2 - lat1) / 6 * (lat_num + 1)
+                    viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
+
+                    req_temp, result_num = main_cal(url, query, viewbox_part, limit, mode)
+                    req += req_temp
+
+                    if result_num < limit:
+                        if lon_num == 5 and lat_num == 5:  # end the loop
+                            shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
+                            return 0
+                        else:
+                            pass
+                    else:
+                        print(f'A subarea still has more than {limit} shops inside. Please change your input coordinates.')
+                        return 0
+
+                    time.sleep(1)
+                    time.sleep(1)
+
+        elif result_num == 0:
+            print('No shops found in the chosen area. Please check your input coordinates or keywords and retry.')
+            return 0
+        else:
+            req = req_temp
+            shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
+            return 0
+
+    # mode=1 situation, more than one keyword is used to get a detailed retail shop list
+    elif mode == 1:
+
+        # set a list to store all request results altogether
+        req_whole = []
+
+        # use loop to search for every keyword inside list "query"
+        for query_num in range(len(query)):
+            req = []
+            req_temp, result_num = main_cal_mode1(url, query[query_num], viewbox, limit)
+
+            if result_num == limit:
+
+                print('Area is too big, trying to spilt it into 36 smaller areas (6 * 6).')
+                req_36part = []
+
+                # loop in evert sub area to find shops
+                for lon_num in range(0, 6):
+                    for lat_num in range(0, 6):
+
+                        # set the new viewbox
+                        lon_begin = lon1 + (lon2 - lon1) / 6 * lon_num
+                        lon_end = lon1 + (lon2 - lon1) / 6 * (lon_num + 1)
+                        lat_begin = lat1 + (lat2 - lat1) / 6 * lat_num
+                        lat_end = lat1 + (lat2 - lat1) / 6 * (lat_num + 1)
+                        viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
+
+                        req_temp, result_num = main_cal_mode1(url, query[query_num], viewbox_part, limit)
+                        req_36part += req_temp
+
+                        if result_num < limit:
+                            if lon_num == 5 and lat_num == 5:  # end the loop
+                                req += req_36part
+
+                        else:
+                            print(f'A subarea has more than {limit} shops inside.'
+                                  f' That is more than the maximum capacity for the program.'
+                                  f'This block will be ignored and will proceed further.')
+                            pass
+
+                        time.sleep(1)
+                        time.sleep(1)
+
+            elif result_num == 0:
+                print(f'No shops found with keyword "{str(query[query_num])}" in the chosen area.')
+            else:
                 req += req_temp
 
-                if result_num < limit:
-                    if lon_num == 1 and lat_num == 1:  # end the loop
-                        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
-                        return 0
-                    else:
-                        pass
-                else:
-                    print(f'A subarea has more than {limit} shops inside. Trying to use smaller areas.')
-                    breaker = True
-                    break  # jump out the inner loop
+            req_whole += req
 
-                time.sleep(1)
-                time.sleep(1)
+        # use place id to find and delete duplicates
+        place_id_list = []
+        place_lon_list = []
+        place_lat_list = []
+        place_coordinate_list = []
 
-        print('4 areas are still not enough. Trying to spilt it into 9 smaller areas (3 * 3).')
-        req = []
+        # create a operable replica
+        req_print = req_whole
+        req_length = len(req_whole)
+        req_compensation = 0
 
-        # try to split the area into 9 parts and do the querying for each part separately
-        for lon_num in range(0, 3):
-            for lat_num in range(0, 3):
-                # set the new viewbox
-                lon_begin = lon1 + (lon2 - lon1) / 3 * lon_num
-                lon_end = lon1 + (lon2 - lon1) / 3 * (lon_num + 1)
-                lat_begin = lat1 + (lat2 - lat1) / 3 * lat_num
-                lat_end = lat1 + (lat2 - lat1) / 3 * (lat_num + 1)
-                viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
+        unique_req = []
 
-                req_temp, result_num = main_cal(url, query, viewbox_part, limit, mode)
-                req += req_temp
+        # here, try to find a solid method to distinguish weather any shop exists more than one time.
+        # however, user-generated data can be messy:
+        # some shops appear more than once but with different IDs and same coordinates.
 
-                if result_num < limit:
-                    if lon_num == 2 and lat_num == 2:  # end the loop
-                        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
-                        return 0
-                    else:
-                        pass
-                else:
-                    print(f'A subarea still has more than {limit} shops inside. Please change your input coordinates.')
-                    return 0
+        # so here, the shops with the same id will be deleted
+        for req_record in req_whole:
+            if req_record["place_id"] not in place_id_list:
+                place_id_list.append(req_record["place_id"])
+                unique_req.append(req_record)
 
-                time.sleep(1)
-                time.sleep(1)
+        # write the results into .xlsx file
+        shop_list_to_excel(req_print, path, filename, sheet)
 
-    elif result_num == 0:
-        print('No shops found in the chosen area. Please check your input coordinates or keywords and retry.')
-        return 0
     else:
-        req = req_temp
-        shop_list_to_excel(req, path, filename, sheet)  # write the results into .xlsx file
+        print("Mode error.")
         return 0
 
-# # test code
-# get_shop_list_Nominatim(10.51849, 52.26068, 10.53121, 52.26522)
+# test code
+# get_shop_list_Nominatim(10.51849, 52.26068, 10.53121, 52.26522, "nominatim.openstreetmap.org",
+#                             "C:/Users/86781/PycharmProjects/pythonProject/data/",
+#                         "test_area_shops.xlsx", "stores", 1)
+#
 # pass

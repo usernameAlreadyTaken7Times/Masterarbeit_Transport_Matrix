@@ -34,16 +34,21 @@ def get_excel_address_state(filepath, sheet):
                   "sachsen", "sachsen-anhalt", "schleswig-holstein", "thüringen", "thueringen"]
 
     # Here we do not consider the situation that inside a .xlsx file, there are shops from different states
-    state = ""
+    state_list = []
 
     for i in range(len(data)):
         if data.values[i][2].split(", ")[-3].lower() in state_name:
             state = data.values[i][2].split(", ")[-3].lower()
-        if state != "" and data.values[i][2].split(", ")[-3].lower() != state:
-            pass  # here just assume all shops are in the same state
+            state_list.append(state)
+        else:
+            state_list.append("NA")
 
-    if state != "":
-        return state
+    def most_common(list):
+        return max(set(list), key=list.count)
+
+    # find the most common element in the list as the state
+    if most_common(state_list) != 'NA':
+        return most_common(state_list)
     else:
         print("State record error. Please input the state manually.")
         state = input("state=?")

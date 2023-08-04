@@ -7,28 +7,16 @@ import os
 from algorithm.calc_block_pop import get_block_pop
 
 
-
-def get_index_in_csv(lon, lat, data_path='C:/Users/86781/PycharmProjects/pythonProject/data/',
-                     filename='pop_dsy_merged.csv'):
+def get_index_in_csv(lon, lat, pop_csv):
     """Return a list, which contains all the index in the .csv file corresponding to the given coordinates.
     The given coordinates should be in the form of (min-lon, min-lat)[left-bottom], (max-lon, max-lat)[right-top].
     Normally, it takes about 1,2 seconds to find an index in the .csv file.
-    If it is necessary, the code inside this function should be replaced in multithread way.
-    :param float lon: The longitude of the point
-    :param float lat: the latitude of the point
-    :param str data_path: the path, in which the merged .csv file is stored
-    :param str filename: the filename of the .csv file
-    :return: the index(row) for the point in the .csv file
-    :rtype: int
+    :param float lon: The longitude of the point,
+    :param float lat: the latitude of the point,
+    :param pop_csv: the read .csv file,
+    :return: the index(row) for the point in the .csv file,
+    :rtype: int.
     """
-
-    # check if the file exists or not
-    if os.path.exists(data_path + filename):
-        pass
-    else:
-        print('No population density file found. Please run the update program for world population density files.')
-
-    pop_csv = pandas.read_csv(data_path + filename)
 
     # Clean the year population density data for index searching only to raise efficiency. Due to an unclear reason,
     # the deleting process below cannot be done in one code:-( So it has to be done 2 times, neither of these codes
@@ -144,7 +132,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
     """
 
     # Because the bounding box has different formats (here lon_min, lat_min, lon_max, lat_max),
-    # Nominatim(left, top, right, bottom), so here is necessary to check if these coordinates
+    # Nominatim (left, top, right, bottom), so here is necessary to check if these coordinates
     # have the right order.
     if lon_min <= lon_max and lat_min <= lat_max:
         pass
@@ -152,15 +140,15 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
         print("Please check your input coordinates, the order may be wrong.")
         return 0
 
+    # print the block geo-information, which the points are in
+    csv_org = pandas.read_csv(csv_file)
 
     # input the coordinates to find their index in .csv file
-    pmin_idx = get_index_in_csv(lon_min, lat_min)
-    pmax_idx = get_index_in_csv(lon_max, lat_max)
+    pmin_idx = get_index_in_csv(lon_min, lat_min, csv_org)
+    pmax_idx = get_index_in_csv(lon_max, lat_max, csv_org)
 
-    # print the block geo-information, which the points are in
-    csv = pandas.read_csv(csv_file)
     # cut the population data to raise efficiency
-    csv = csv.drop(csv.columns[2:22], axis=1)
+    csv = csv_org.drop(csv_org.columns[2:22], axis=1)
     csv = csv.drop(csv.columns[2], axis=1)
 
     # print('Points: ', csv.values[pmin_idx][0], csv.values[pmin_idx][1], csv.values[pmax_idx][0], csv.values[pmax_idx][1])
@@ -245,7 +233,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
                 # calculate the block coordinates
                 block_lon = lon_min + lon_count * 0.008333
                 block_lat = lat_min + lat_count * 0.008333
-                ID_block = get_index_in_csv(block_lon, block_lat)
+                ID_block = get_index_in_csv(block_lon, block_lat, csv_org)
 
                 # # print the interim result, for test only
                 # print('Geo coordinates: ', block_lon, block_lat)
@@ -284,7 +272,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
                 # calculate the block coordinates
                 block_lon = lon_min + lon_count * 0.008333
                 block_lat = lat_min + lat_count * 0.008333
-                ID_block = get_index_in_csv(block_lon, block_lat)
+                ID_block = get_index_in_csv(block_lon, block_lat, csv_org)
 
                 # # print the interim result, for test only
                 # print('Geo coordinates: ', block_lon, block_lat)
@@ -325,7 +313,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
             area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
             area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat
 
-def get_test_area_info(lon1, lat1, lon2, lat2, year, test_mode):
+def get_test_area_info(lon1, lat1, lon2, lat2, year, test_mode, csv_file):
     """This function is used to gather information of the test area base on the regression of historical data.
     The information contains the blocks' ID in .csv file, their geo-coordinates, cartesian coordinates and also
     predicted population.
@@ -335,6 +323,7 @@ def get_test_area_info(lon1, lat1, lon2, lat2, year, test_mode):
     :param float lat2: the maximum latitude of the shop points,
     :param int year: the year of the to-predict area,
     :param bool test_mode: weather the program is in test mode or not, default=True
+    :param str csv_file: the merged .csv file containing all population density's data,
     :return: lists of involved areas' blocks' csv indexes ID,
     geo-coordinates, cartesian coordinates and predict population.
     """
@@ -342,7 +331,7 @@ def get_test_area_info(lon1, lat1, lon2, lat2, year, test_mode):
     area_0_ID_list, area_0_cd_list_lon, area_0_cd_list_lat, area_0_cc_list_lon, area_0_cc_list_lat, \
         area_1_ID_list, area_1_cd_list_lon, area_1_cd_list_lat, area_1_cc_list_lon, area_1_cc_list_lat, \
         area_2_ID_list, area_2_cd_list_lon, area_2_cd_list_lat, area_2_cc_list_lon, area_2_cc_list_lat \
-        = get_area_blocks_idx(lon1, lat1, lon2, lat2, test_mode, 2)
+        = get_area_blocks_idx(lon1, lat1, lon2, lat2, test_mode, 2, csv_file)
 
 
     # blocks pop init

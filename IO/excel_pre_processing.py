@@ -1,35 +1,37 @@
-import os.path
-import pandas as pd
-import openpyxl
-import sys
-
 from IO.excel_input import load_excel
 
 
-def get_pre_processing_excel(filename, sheet='Tabelle1', path='C:/Users/86781/PycharmProjects/pythonProject/venv/data/'):
-    """This funktion should be uesd to preprocess the input .xlsx file, which caitains the names, addresses of the shop
-    and the geo-coordinates(for thoes shops which can be found in the .pbf file) for further use.
-    The output of this funktion should be a processed .xlsx file with fixed format, for example:
-
-    |Nr.---|Name----|City------------|street-------------|Number-----|coordinate_Lat----------|coordinate_Log--------|
-    |1.    |Rewe    |Braunschweig    |Rebenring          |63         |xx.xxxxxxxxxxx          |xx.xxxxxxxxxxx        |
-    ------------------------------------------------------------------------------------------------------------------
-    |2.    |Rewe    |Braunschweig    |Wendenring         |1          |xx.xxxxxxxxxxx          |xx.xxxxxxxxxxx        |
-    ------------------------------------------------------------------------------------------------------------------
-    |3.    |IMN     |Braunschweig    |Langer Kamp        |19a        |xx.xxxxxxxxxxx          |xx.xxxxxxxxxxx        |
-    ------------------------------------------------------------------------------------------------------------------
-    ......
-    ......
-    ------------------------------------------------------------------------------------------------------------------
-    |x.    |xxx     |xxxxxxxxxxxx    |xxxxxxxxxxx        |xxx        |xx.xxxxxxxxxxx          |xx.xxxxxxxxxxx        |
-
-    (Take Nr. 3 as example, the coordinates is not available from the .pbf file. It will be completed in the next step
-    using Geocoding method.)
-
-    This is the first processing step for the input .xlsx file. In the following step, the skript deals with the shops
-    which do not have coordinates yet.
+def get_pre_processing_excel(origin_path, origin_filename, sheet_name, store_path, store_name, store_sheet_name):
+    """This funktion aims to pre-process the input .xlsx file, which contains the addresses and the geo-coordinates
+     of the shops.
+     :param str origin_path: The file path, where the to-be-processed .xlsx file is located,
+     :param str origin_filename: the file name,
+     :param str sheet_name: the .xlsx file sheet name,
+     :param str store_name: the file name to be stored in /data/ folder,
+     :param str store_path: the file path, actually the /data/ folder,
+     :param str store_sheet_name: the stored .xlsx file sheet name.
     """
-    data = load_excel(filename, sheet, path)
+
+    data = load_excel(origin_path+origin_filename, sheet_name)
+
+    # we assume the to-be-processed .xlsx file is in the such format: Nr-ID-lat-lon-address,
+    # yet the output format should be lon-lat-address
+
+    # drop unnecessary columns
+    data = data.drop(columns=['Unnamed: 0', 'id'])
+
+    # change columns' places
+    data = data.loc[:, ['lon', 'lat', 'address']]
+
+    # save the data to an .xlsx file for further use
+    data.to_excel(store_path + store_name, store_sheet_name, index=False)
+
+# # test code
+# get_pre_processing_excel("C:/Users/86781/PycharmProjects/pythonProject/", "locations.xlsx",
+#                          "stores", "C:/Users/86781/PycharmProjects/pythonProject/data/",
+#                          "locations.xlsx", "stores")
+# pass
+
 
 
 

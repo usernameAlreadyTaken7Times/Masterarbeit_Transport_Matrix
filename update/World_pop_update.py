@@ -1,4 +1,3 @@
-import sys
 import requests
 import math
 import os
@@ -22,14 +21,14 @@ def file_download(url, path, filename):
     print(f'\nDownload complete: {filename}\n')
 
 
-if __name__ == '__main__':
+def POP_update_program(path_file, data_path, file_name):
     """This function can be used to download the population density data from the chosen website. Then the files are 
-    merged into a combined .csv file and stored in upper path for further use. """
-    path_file = '../data/pop_den/'
-
-    # Here are the filename and links for other online file/database in case of needs.
-    filename_light = ''
-    url_light = ''
+    merged into a combined .csv file and stored in the upper path for further use.
+    :param str path_file: The path in which all downloaded .csv files are stored,
+    :param str data_path: the data path,
+    in which all important data is stored, normally should be the upper path of path_file,
+    :param str file_name: the combined .csv file's name.
+    """
 
     for data_year in range(2000, 2021):
 
@@ -80,7 +79,6 @@ if __name__ == '__main__':
         csvFile = pandas.concat([csvFile, new_csvFile], axis=1)
 
     # save the file in the upper path
-    csvFile.to_csv(path_file[0:-8] + 'pop_dsy_merged.csv', index=False)
+    csvFile.to_csv(data_path + file_name, index=False)
 
     print('New population density .csv file created. Merge process finish.')
-    sys.exit(0)

@@ -1,4 +1,3 @@
-import sys
 import requests
 import os
 import time
@@ -14,8 +13,8 @@ def md5_download(url, path, filename):
 
 
 def pbf_download(url, path, filename):
-    """This funktion aims to download .pbf file. Because the .pbf file is always relative big, a progress
-    display is applied."""
+    """This funktion aims to download .pbf file.
+    Because the .pbf file is always relatively big, a progress display is applied."""
     response = requests.get(url, stream=True)
     total_size = int(response.headers.get('content-length', 0))
     block_size = 1024
@@ -271,20 +270,34 @@ def get_pbf_weblinks(level):
         return [''], ['']
 
 
-if __name__ == '__main__':
+def pbf_update_program(path, area=0):
     """This .py program can be used to get the .pbf file urls and determine weather local .pbf files are up-to-date. 
     If not, it will automatically update the .pbf file."""
 
     # Area shows that which level of area is used in the project. Area=-1~3 countries(Deutschzone); area=0~germany only;
-    # Area=1~germany provinces; Area=2~much lower level of germany provinces
-    area = 1
-    path = '../data/osm/'
+    # Area=1~germany provinces; Area=2~much lower level of germany provinces, by default area=0
+
     pbf_name, pbf_url = get_pbf_weblinks(area)
     t = 0
     while t < len(pbf_name):
         # print(t, pbf_name[t], pbf_url[t])
         pbf_update(path, pbf_name[t], pbf_url[t])
         t = t + 1
-    print('Update finish.')
+    print('PBF file updating finish.')
     print('***********************************************************************************************************')
-    sys.exit(0)
+
+
+def pbf_Europe_update_program(path):
+    """This function can be used to get the Europe's .pbf file."""
+
+    # for europe's .pbf file, no checking md5 and then update support.
+    pbf_name = "europe-latest.osm.pbf"
+    pbf_url = "https://download.geofabrik.de/europe-latest.osm.pbf"
+    if os.path.exists(path + pbf_name):
+        print("No update needed, file already exists.")
+    else:
+        pbf_download(path, pbf_name, pbf_url)
+        print('Europe PBF file updating finish.')
+
+    print('***********************************************************************************************************')
+

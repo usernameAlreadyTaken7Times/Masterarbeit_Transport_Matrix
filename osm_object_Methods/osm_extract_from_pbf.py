@@ -36,6 +36,17 @@ def osm_extract_from_pbf(min_lon, min_lat, max_lon, max_lat, osm_tool_path,
 
     cmd = osm_tool_path + osm_command + arg
 
+    # try to proceed the extraction process
     subprocess.run(cmd)
-    print('.osm file extracted and stored.')
 
+    # a normal osm file of test areas should not be too small.
+    # when that happens, it indicates an attribute error.
+    if os.path.getsize(osm_file_path + osm_file_name) <= 5000:
+        print(".osm file's attribute error.")
+        raise AttributeError
+    else:
+        print('.osm file extracted and stored.')
+
+# # test code
+# osm_extract_from_pbf(0, 1, 0.001, 1.001, "C:/Users/86781/anaconda3/Library/bin/")
+# pass
