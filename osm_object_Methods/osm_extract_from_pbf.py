@@ -39,6 +39,9 @@ def osm_extract_from_pbf(min_lon, min_lat, max_lon, max_lat, osm_tool_path,
     # try to proceed the extraction process
     subprocess.run(cmd)
 
+    # Important Note: the path of .osm and .pbf file should not contain any spaces. If there is any space,
+    # the subprocess and Error manager will raise error. You may change the spaces to underline to avoid such problem.
+
     # a normal osm file of test areas should not be too small.
     # when that happens, it indicates an attribute error.
     if os.path.getsize(osm_file_path + osm_file_name) <= 5000:

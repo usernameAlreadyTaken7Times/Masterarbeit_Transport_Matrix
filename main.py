@@ -17,6 +17,7 @@ from algorithm.get_test_area_retail_inflation_correction import get_test_area_re
 from algorithm.get_test_area_retail_month_correction import get_test_area_retail_month_correction
 from osm_object_Methods.get_shop_info_osm import add_shop_info_column_to_excel
 from algorithm.get_test_area_retail_day_correction import get_test_area_retail_day_correction
+from algorithm.get_RLS_retail_data import get_RLS_retail_data
 
 # update programs
 from update.PBF_update import pbf_update_program
@@ -31,12 +32,21 @@ if __name__ == '__main__':
     This program aims to estimate the shipment of shops in a given .xlsx file. 
     """
 
-    # Prepare with the configration file: read config file and store the paths for the file and scripts.
+    # Prepare with the configration file: read config file and store the paths for the file and scripts,
+    # and should not be activated together with test environment (see below this code block)
     if Production_Env:
         config = Production_Env
     else:
-        print('Configuration is not available. Please check again.')
+        print('Production configuration parameters are not available. Please check again.')
         raise FileNotFoundError
+
+    # # the configuration parameters for test environment,
+    # # and should not be activated together with production environment (see before this code block)
+    # if Test_Env:
+    #     config = Test_Env
+    # else:
+    #     print('Test configuration parameters are not available. Please check again.')
+    #     raise FileNotFoundError
 
     # ------------------------------clean unneeded files and test if important files exist------------------------------
 
@@ -94,10 +104,10 @@ if __name__ == '__main__':
     # read the population density file
     pop_csv = pandas.read_csv(config.DATA_PATH + config.POP_DEN_file_name)
 
-    # pre-process the provided .xlsx file containing shop coordinates and addresses
-    get_pre_processing_excel(config.ORG_XLSX_PATH, config.ORG_XLSX_NAME, config.ORG_XLSX_SHEET,
-                             config.input_xlsx_file_path, config.input_xlsx_file_name,
-                             config.input_xlsx_file_sheet)
+    # # pre-process the provided .xlsx file containing shop coordinates and addresses
+    # get_pre_processing_excel(config.ORG_XLSX_PATH, config.ORG_XLSX_NAME, config.ORG_XLSX_SHEET,
+    #                          config.input_xlsx_file_path, config.input_xlsx_file_name,
+    #                          config.input_xlsx_file_sheet)
 
     # read the input .xlsx shop file
     input_shop_xlsx = load_excel(config.input_xlsx_file_path + config.input_xlsx_file_name,
@@ -129,7 +139,8 @@ if __name__ == '__main__':
                          config.OSM_TOOL_PATH, config.PBF_PATH, config.PBF_WHOLE_NAME,
                          config.DATA_PATH, config.OSM_NAME)
     except AttributeError:
-        print("The input boundary of test area is out of Germany.")
+        print("The input boundary of test area is out of Germany. Even though you choose to download an Europe .pbf "
+              "file and extract from it, the calculation result could not be so accurate.")
         if config.ALLOW_EUROPE_PBF_UPDATE:
             temp_allow_update_europe_map = input("Do you want to download Europe's .pbf file for that? 0=No, 1=Yes.")
             if temp_allow_update_europe_map == 1:
@@ -173,11 +184,12 @@ if __name__ == '__main__':
     else:
         Nominatim_server = config.Nominatim_server_offline
 
-    # use Nominatim service to get a shop list for the whole test area, 0, 1 &2 and write the shop list to an .xlsx file
+    # use Nominatim service to get a shop list for the whole test area 0, 1, 2,
+    # and write the shop list to an .xlsx file
     try:
         get_shop_list_Nominatim(test_area_lon_min, test_area_lat_min, test_area_lon_max, test_area_lat_max,
                             Nominatim_server, config.test_area_shop_list_path, config.test_area_shop_list_name,
-                            config.test_area_shop_list_sheet)
+                            config.test_area_shop_list_sheet, 1)
     except:
         print("Test area coordinates are out of range of Germany.")
         # TODO: ERROR type?
@@ -256,9 +268,22 @@ if __name__ == '__main__':
     # convert the customer number to retail sale amount in Euro
     sale_amount_uncorrected = [i * retail_avg for i in shops_customer]
 
+    # determine which year of the data good value-weight relationship is going to be used
+    standard_year = 2020  # just in case the loop does not work, normally this value should be overwritten
+
+    if config.RLS_retail_Year_BY_DEFAULT:
+        if 2011 <= config.YEAR <= 2020:
+            standard_year = config.YEAR
+        elif config.YEAR > 2020:
+            standard_year = 2020
+        elif config.YEAR < 2011:
+            standard_year = 2011
+    else:
+        standard_year = config.RLS_retail_Year
+
     # correct the sale amount with yearly inflation and monthly income fluctuation
     sale_amount_temp = [get_test_area_retail_inflation_correction(i,
-                                        config.YEAR, config.standard_year,
+                                        config.YEAR, standard_year,
                                         config.INFLATION_file_path + config.INFLATION_file_name,
                                         config.INFLATION_file_sheet) for i in sale_amount_uncorrected]
 
@@ -271,8 +296,19 @@ if __name__ == '__main__':
     # transform the unit to Euro/day
     sale_amount_corrected_day = get_test_area_retail_day_correction(sale_amount_corrected, config.MONTH, config.YEAR)
 
+    # use standard_year to calculate the relationship
+    RLS_retail = get_RLS_retail_data(standard_year,
+                                     config.RLS_retail_path + config.RLS_retail_name,
+                                     config.RLS_retail_sheet)
+
+    # check the output format
+    if isinstance(RLS_retail, int) or isinstance(RLS_retail, float):
+        pass
+    else:
+        raise ValueError
+
     # convert the retail sale amount into retail good weight
-    retail_amount = [i * config.RLS_retail for i in sale_amount_corrected_day]
+    retail_amount = [i * RLS_retail for i in sale_amount_corrected_day]
 
     # write the sale amount back to the input .xlsx file
     add_shop_info_column_to_excel(config.input_xlsx_file_path + config.input_xlsx_file_name,
@@ -280,13 +316,18 @@ if __name__ == '__main__':
                                   retail_amount,
                                   "retail_amount_weight")
 
-    # write the sale amount back to the original .xlsx file in Anylogic program folder
-    add_shop_info_column_to_excel(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
-                                  config.ORG_XLSX_SHEET,
-                                  retail_amount,
-                                  "retail_amount_weight")
+    # # write the sale amount back to the original .xlsx file in Anylogic program folder
+    # add_shop_info_column_to_excel(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
+    #                               config.ORG_XLSX_SHEET,
+    #                               retail_amount,
+    #                               "retail_amount_weight")
 
-    print("Data written back into the .xlsx file in Anylogic program path, the calculation ends.")
+    print("Data written back into the .xlsx file in Anylogic program path, the calculation process ends.")
+
+    # then the Anylogic model can be run.
+    # after running the model and generating a .csv output file,
+    # the function "Anylogic_output_csv_process" can be of help on processing result data.
+
 
     pass
     sys.exit()

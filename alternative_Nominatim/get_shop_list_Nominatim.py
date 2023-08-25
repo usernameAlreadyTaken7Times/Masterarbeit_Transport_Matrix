@@ -3,6 +3,37 @@ import time
 import requests
 import pandas as pd
 import os
+from math import radians, sin, cos, sqrt, atan2
+
+
+def haversine(lon1, lat1, lon2, lat2):
+    """This function uses haversine formula to calculate the distance from given coordinates
+    and return the length (in meters) between two points whose geo-coordinates are already known.
+    :param float lon1: The longitude of point 1,
+    :param float lat1: the latitude of point 1,
+    :param float lon2: the longitude of point 2,
+    :param float lat2: the latitude of point 2,
+    :rtype float
+    :return: the length between two points in kilometer.
+    """
+
+    # approximate radius of earth in km
+    R = 6373.0
+
+    # Convert coordinate angles to radians
+    lon1_r = radians(lon1)
+    lat1_r = radians(lat1)
+    lon2_r = radians(lon2)
+    lat2_r = radians(lat2)
+
+    # calculate the coordinates' difference
+    diff_lon = lon2_r - lon1_r
+    diff_lat = lat2_r - lat1_r
+
+    a = sin(diff_lat / 2) ** 2 + cos(lat1_r) * cos(lat2_r) * sin(diff_lon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return R * c * 1000
 
 
 def shop_list_to_excel(req, path, filename, sheet):
@@ -67,7 +98,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
     def main_cal(url, query, viewbox, limit, mode):
         """This is the main querying program for Nominatim.
          It raises a request to the server and gets results from it.
-         For code's readability, this part of code is separated from other code blocks and placed in the
+         For code's readability, this part of code is separated from other code blocks and placed at the
          beginning of the function.
 
          Please note: this function is not fit for mode 1.
@@ -123,7 +154,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
             print('Area is too big, trying to spilt it into 4 smaller areas (2 * 2).')
             req = []
 
-            # try to split the area into 4 parts and do the querying for each part separately
+            # try to split the area into four parts and do the querying for each part separately
             breaker = False  # an exit for breaking inner loop
             for lon_num in range(0, 2):
                 if breaker:
@@ -244,16 +275,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
 
         # use place id to find and delete duplicates
         place_id_list = []
-        place_lon_list = []
-        place_lat_list = []
-        place_coordinate_list = []
-
-        # create a operable replica
-        req_print = req_whole
-        req_length = len(req_whole)
-        req_compensation = 0
-
-        unique_req = []
+        unique_req_temp = []
 
         # here, try to find a solid method to distinguish weather any shop exists more than one time.
         # however, user-generated data can be messy:
@@ -261,20 +283,60 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
 
         # so here, the shops with the same id will be deleted
         for req_record in req_whole:
-            if req_record["place_id"] not in place_id_list:
-                place_id_list.append(req_record["place_id"])
-                unique_req.append(req_record)
+            if "place_id" in req_record.keys():
+                if req_record["place_id"] not in place_id_list:
+                    place_id_list.append(req_record["place_id"])
+                    unique_req_temp.append(req_record)
+
+        address_temp = []
+        coordinates_temp = []
+        unique_req = []
+
+        # check if there's any shop with the same address, different place_id but really close to other shops
+        for req_record_temp in unique_req_temp:
+            if req_record_temp["display_name"] not in address_temp:
+                address_temp.append(req_record_temp["display_name"])
+                coordinates_temp.append((req_record_temp["lon"], req_record_temp["lat"]))
+                unique_req.append(req_record_temp)
+            else:
+                # the address was already in the store list,
+                # now we should check if the straight line distances between this shop and other shops are less then
+                # the limitation
+
+                # search for the index of the same address
+                order_index = address_temp.index(req_record_temp["display_name"])
+
+                distance_shops = haversine(float(coordinates_temp[order_index][0]),
+                                           float(coordinates_temp[order_index][1]),
+                                           float(req_record_temp["lon"]),
+                                           float(req_record_temp["lat"]))
+                if distance_shops <= 20:
+                    # when the distance is smaller than 20m, then they are assumed as the same shop
+                    # and in that case, no new record is written
+                    pass
+                else:
+                    address_temp.append(req_record_temp["display_name"])
+                    coordinates_temp.append((req_record_temp["lon"], req_record_temp["lat"]))
+                    unique_req.append(req_record_temp)
+
+        # check if there's any shop with the same name, different place_id, but the distance is less than 10m
 
         # write the results into .xlsx file
-        shop_list_to_excel(req_print, path, filename, sheet)
+        shop_list_to_excel(unique_req, path, filename, sheet)
 
     else:
         print("Mode error.")
         return 0
 
-# test code
-# get_shop_list_Nominatim(10.51849, 52.26068, 10.53121, 52.26522, "nominatim.openstreetmap.org",
+# # test code
+# get_shop_list_Nominatim(10.5858, 51.7162, 10.6367, 51.7346, "nominatim.openstreetmap.org",
 #                             "C:/Users/86781/PycharmProjects/pythonProject/data/",
 #                         "test_area_shops.xlsx", "stores", 1)
 #
+# get_shop_list_Nominatim(10.3137, 51.7973, 10.3646, 51.8156, "nominatim.openstreetmap.org",
+#                             "C:/Users/86781/PycharmProjects/pythonProject/data/",
+#                         "input_shops.xlsx", "stores", 1)
+
+# a = haversine(10.3638382, 51.8016557, 10.3572548, 51.8031631)
+
 # pass

@@ -136,11 +136,12 @@ def get_retail_average(predict_year, predict_state,
         mode = 2
 
     # use historical data
-    if 2014 <= year <= 2022:
+    elif 2014 <= year <= 2022:
         print(f'Input year is {str(year)}, using historical data from .csv file.')
         mode = 0
 
     # # use prediction data for Einwohnen, historical data for BIP_handel
+    # # update: this part should never be reached after altering the calculation method
     # elif 2021 <= year <= 2022:
     #     print(f'Input year is {str(year)}, using predication data from .csv file.')
     #     mode = 3
@@ -157,12 +158,12 @@ def get_retail_average(predict_year, predict_state,
         return 0
 
     # For different modes, use different methods to get state average retail sale amount
-    # mode 0: year 2014-2020, use historical data in .csv file
+    # mode 0: year 2014-2022, use historical data in .csv file
     if mode == 0:
         # directly return the data in .csv file, unit of measurement Euro/person
         return BIP_handel_state[year-2008] / Einwohner_state[year-2008] * 1000
 
-    # mode 1: year 2023-2025, need to use predication method for all 3 values
+    # mode 1: year 2023-2025, need to use predication method for all the three values
     elif mode == 1:
 
         # first, try to fit the population number with BIP_je_Person
@@ -240,8 +241,8 @@ def get_retail_average(predict_year, predict_state,
             return part1 * part2 + part3
 
         '''
-        # these codes can be used to plot the time-BIP relationship, and can be used to output a diagram to show the fitting
-        # effect
+        # these codes can be used to plot the time-BIP relationship, 
+        # and can be used to output a diagram to show the fitting effect
         fig4, ax4 = plt.subplots()
         ax4.plot(year_state, BIP_handel_state, 'bo', label='Rohdaten')
         ax4.plot(year_state, get_predict_retail_from_year(year_state), 'r-', label='Kurvenanpassung')
@@ -265,7 +266,7 @@ def get_retail_average(predict_year, predict_state,
         # try to fit the ln(d) with W/P. Instead of rename it with two parameters;
         # Noted: the data for this curve fitting is only for year 2008-2020, and for
         # predication for year 2000-2007 only.
-        def func4(x, kp, bp):  # Although it is named func4, this function's content is 100% the same as func3 in mode 1.
+        def func4(x, kp, bp):  # Although has different names, the content is totally the same as the func3 in mode 1.
             return kp * x + bp
 
         popt4, pcov4 = curve_fit(func4, np.log(BIP_je_Person_state), BIP_handel_state / Einwohner_state)
@@ -279,6 +280,8 @@ def get_retail_average(predict_year, predict_state,
         return (kp_4 * np.log(BIP_je_Person_state_add[year-2000]) + bp_4) * 1000
 
     # mode 3: year 2021-2022, need to predict population
+    # update: this part should never be reached after altering the calculation method.
+    # this part cab be deleted.
     elif mode == 3:
 
         # try to fit time and population. likewise, this function is also the same as the one in mode 1 for the

@@ -5,7 +5,7 @@ class Common_Env(object):
 
     # --------------------------------common variables------------------------------------------------------------------
 
-    # in test mode?
+    # is the program run in the test mode?
     # (shorten test area's side length to reduce calculation burden significantly and thus raise efficiency)
     TEST_MODE = True
 
@@ -37,10 +37,6 @@ class Common_Env(object):
     # the month of calculation for the program, and should be in range 1-12 E.g., for August use number 8 rather than 08
     MONTH = 2
 
-    # the standard year for cargo price-cargo volume calculation, and is only used to convert the sales of the
-    # current year to the corresponding standard year to exclude the effects of inflation and monthly sales fluctuations
-    standard_year = 2005
-
 
 class Production_Env(Common_Env):
 
@@ -57,6 +53,10 @@ class Production_Env(Common_Env):
 
     # the anylogic program path, only used to get the input .xlsx file
     ANYLOGIC_PATH = "C:/Users/86781/PycharmProjects/Distribution Model/"
+
+    # the anylogic output path, in which a .csv file with running results can be found
+    ANYLOGIC_OUTPUT_PATH = ANYLOGIC_PATH + "Rewe Distribution/"
+    ANYLOGIC_OUTPUT_CSV_NAME = "outputFile.csv"
 
     # original shop .xlsx file path, name and sheet name,
     # which will be read by the program as input
@@ -102,8 +102,25 @@ class Production_Env(Common_Env):
     MONTH_file_sheet = "monat_anteil"
 
     # the retail good's relationship between weight and price
-    # Euro/Kg
-    RLS_retail = 0.48
+    # Unit Euro/Kg
+    RLS_retail = 0.74
+    RLS_retail_path = DATA_PATH
+    RLS_retail_name = "RLS.xlsx"
+    RLS_retail_sheet = "RLS"
+
+    # The data you want to use for retail good-weight relationship.
+    # By default, it should be chosen from 2011-2020.
+    # If the simulation standard year is beyond this period,
+    # then it is set to the nearest year to the simulation standard year;
+    # if the simulation standard year is in this period, then it is set as the simulation standard year.
+    # However, you can still manually change this regulation if you want.
+    RLS_retail_Year_BY_DEFAULT = True
+
+    # the standard year for cargo price-cargo weight calculation, and is only used to convert the sales of the
+    # current year to the corresponding standard year,
+    # in order to reduce the error of calculating with inflation and monthly sales fluctuations
+    # By default, it should be chosen from 2011-2020!!!
+    RLS_retail_Year = 2020
 
     # -------------------------------program generated files------------------------------------------------------------
 
@@ -111,7 +128,7 @@ class Production_Env(Common_Env):
     OSM_PATH = DATA_PATH
     OSM_NAME = "test_area.osm"
 
-    # the original-.xlse file-generated input .xlsx file,
+    # the original-.xlsx file-generated input .xlsx file,
     # containing all to-be-calculated shops (and their coordinates)
     input_xlsx_file_path = DATA_PATH
     input_xlsx_file_name = "input_shops.xlsx"
@@ -130,5 +147,8 @@ class Test_Env(Common_Env):
     change the records accordingly.
     Then in the main program, the statements at the beginning should also be changed from Production_Env to Test_Env.
     Thus, the whole environment can be switched.
+    Therefore, it is recommended to copy the configuration records in "Production_Env" in here and reset all records to
+    the corresponding info in the new environment.
+
     """
 
