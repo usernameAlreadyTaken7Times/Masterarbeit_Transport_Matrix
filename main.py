@@ -101,10 +101,11 @@ if __name__ == '__main__':
     # First, check the input .xlsx file format.
     # Here an extra function is provided for the situation that the coordinates of the shops are not available.
 
-    # read the population density file
-    pop_csv = pandas.read_csv(config.DATA_PATH + config.POP_DEN_file_name)
+    # # read the population density file, but it is not actually directly used in the main script
+    # pop_csv = pandas.read_csv(config.DATA_PATH + config.POP_DEN_file_name)
 
-    # # pre-process the provided .xlsx file containing shop coordinates and addresses
+    # # pre-process the provided .xlsx file containing shop coordinates and addresses, for unprocessed location data in
+    # # Anylogic folder only
     # get_pre_processing_excel(config.ORG_XLSX_PATH, config.ORG_XLSX_NAME, config.ORG_XLSX_SHEET,
     #                          config.input_xlsx_file_path, config.input_xlsx_file_name,
     #                          config.input_xlsx_file_sheet)
@@ -174,10 +175,6 @@ if __name__ == '__main__':
     retail_avg = get_retail_average(config.YEAR, state, config.BIP_file_path + config.BIP_file_name,
                                     config.BIP_file_sheet)
 
-    # calculate the retail sale amount of the test area 0 & 1.
-    # it should be applied to all shops inside test area 0, 1 & 2 accordingly
-    test_area_retail = area_people * retail_avg
-
     # use different server based on the setting
     if config.Use_online_Nominatim_server:
         Nominatim_server = config.Nominatim_server_online
@@ -192,8 +189,7 @@ if __name__ == '__main__':
                             config.test_area_shop_list_sheet, 1)
     except:
         print("Test area coordinates are out of range of Germany.")
-        # TODO: ERROR type?
-        pass
+        raise ValueError
     finally:
         # check if the shop list for the whole test area is available
         if os.path.exists(config.test_area_shop_list_path + config.test_area_shop_list_name):
@@ -296,7 +292,7 @@ if __name__ == '__main__':
     # transform the unit to Euro/day
     sale_amount_corrected_day = get_test_area_retail_day_correction(sale_amount_corrected, config.MONTH, config.YEAR)
 
-    # use standard_year to calculate the relationship
+    # use standard_year to calculate the good's value-weight relationship
     RLS_retail = get_RLS_retail_data(standard_year,
                                      config.RLS_retail_path + config.RLS_retail_name,
                                      config.RLS_retail_sheet)
@@ -326,7 +322,7 @@ if __name__ == '__main__':
 
     # then the Anylogic model can be run.
     # after running the model and generating a .csv output file,
-    # the function "Anylogic_output_csv_process" can be of help on processing result data.
+    # the function "Anylogic_output_csv_process" in "Anylogic_data_process" can be of help in processing result data.
 
 
     pass

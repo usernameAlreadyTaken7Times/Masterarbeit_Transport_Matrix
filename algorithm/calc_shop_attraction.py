@@ -43,6 +43,7 @@ def get_shop_attraction(shop_xlsx="C:/Users/86781/PycharmProjects/pythonProject/
         # calculate the shop attraction
         attc[shop_num] = pow(area[shop_num], k_area) * factor[shop_num]
 
+    # write the attraction data back to the 5th column of test_area .xlsx file
     add_shop_info_column_to_excel(shop_xlsx, shop_xlsx_sheet, attc, "attraction")
 
     return attc

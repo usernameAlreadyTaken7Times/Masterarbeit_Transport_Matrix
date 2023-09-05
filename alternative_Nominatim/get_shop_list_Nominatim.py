@@ -1,5 +1,3 @@
-import time
-
 import requests
 import pandas as pd
 import os
@@ -183,8 +181,8 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
                         breaker = True
                         break  # jump out the inner loop
 
-                    time.sleep(1)
-                    time.sleep(1)
+                    # if the server does not support continually searching, sleep for 1 sec
+                    # time.sleep(1)
 
             print('4 areas are still not enough. Trying to spilt it into 36 smaller areas (6 * 6).')
             req = []
@@ -209,11 +207,12 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
                         else:
                             pass
                     else:
-                        print(f'A subarea still has more than {limit} shops inside. Please change your input coordinates.')
+                        print(f'A subarea still has more than {limit} shops inside. '
+                              f'Please change your input coordinates.')
                         return 0
 
-                    time.sleep(1)
-                    time.sleep(1)
+                    # if the server does not support continually searching, sleep for 1 sec
+                    # time.sleep(1)
 
         elif result_num == 0:
             print('No shops found in the chosen area. Please check your input coordinates or keywords and retry.')
@@ -263,8 +262,8 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
                                   f'This block will be ignored and will proceed further.')
                             pass
 
-                        time.sleep(1)
-                        time.sleep(1)
+                        # if the server does not support continually searching, sleep for 1 sec
+                        # time.sleep(1)
 
             elif result_num == 0:
                 print(f'No shops found with keyword "{str(query[query_num])}" in the chosen area.')

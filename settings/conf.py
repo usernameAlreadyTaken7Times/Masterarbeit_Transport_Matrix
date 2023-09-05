@@ -103,7 +103,6 @@ class Production_Env(Common_Env):
 
     # the retail good's relationship between weight and price
     # Unit Euro/Kg
-    RLS_retail = 0.74
     RLS_retail_path = DATA_PATH
     RLS_retail_name = "RLS.xlsx"
     RLS_retail_sheet = "RLS"
@@ -119,7 +118,7 @@ class Production_Env(Common_Env):
     # the standard year for cargo price-cargo weight calculation, and is only used to convert the sales of the
     # current year to the corresponding standard year,
     # in order to reduce the error of calculating with inflation and monthly sales fluctuations
-    # By default, it should be chosen from 2011-2020!!!
+    # By default, it should only be chosen from 2011-2020!!!
     RLS_retail_Year = 2020
 
     # -------------------------------program generated files------------------------------------------------------------

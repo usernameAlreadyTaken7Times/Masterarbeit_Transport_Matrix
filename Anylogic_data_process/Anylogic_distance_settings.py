@@ -30,3 +30,4 @@ class Anylogic_distance_settings:
     Nominatim_shop_list_name = "Nominatim_shops.xlsx"
     Nominatim_shop_list_sheet = "stores"
 
+

@@ -1,3 +1,5 @@
+import os
+
 from IO.excel_input import load_excel
 
 
@@ -7,6 +9,11 @@ def get_RLS_retail_data(year, file, sheet):
     """
 
     # the input testing phrase is skipped. I just assume the inputs are valid
+    if os.path.exists(file):
+        pass
+    else:
+        print("RLS file not availavle. Please check and retry.")
+        raise FileNotFoundError
 
     # read data
     RLS = load_excel(file, sheet)
@@ -16,5 +23,6 @@ def get_RLS_retail_data(year, file, sheet):
     return relation
 
 # # test data
-# aa = [get_RLS_retail_data(i, "C:/Users/86781/PycharmProjects/pythonProject/data/RLS.xlsx", "RLS") for i in range(2011, 2020)]
+# aa = [get_RLS_retail_data(i,
+#                   "C:/Users/86781/PycharmProjects/pythonProject/data/RLS.xlsx", "RLS") for i in range(2011, 2020)]
 # pass
