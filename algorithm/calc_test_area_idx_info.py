@@ -19,8 +19,9 @@ def get_index_in_csv(lon, lat, pop_csv):
     """
 
     # Clean the year population density data for index searching only to raise efficiency. Due to an unclear reason,
-    # the deleting process below cannot be done in one code:-( So it has to be done 2 times, neither of these codes
-    # should be deleted. (Or a problem of wrong data format will be raised.)
+    # the deleting process below cannot be done in one code:-( So it has to be done two times, neither of these codes
+    # should be deleted.
+    # (Or a problem of wrong data format might occur.)
     pop_csv = pop_csv.drop(pop_csv.columns[2:22], axis=1)
     pop_csv = pop_csv.drop(pop_csv.columns[2], axis=1)
 
@@ -175,7 +176,7 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
         area_1_add = 1
         area_2_add = 1
     else:
-        # set the min outer regions of the test area 1 & 2, here are set to 3 blocks and 2 blocks
+        # set the min outer regions of the test area 1 & 2, here are set to three blocks and two blocks
         if area_1_add <= 3:
             area_1_add = 3
         if area_2_add <= 1:

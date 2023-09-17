@@ -13,12 +13,6 @@ def set_excel(data, filename, sheet='Tabelle1', path='C:/Users/86781/PycharmProj
     print('Write to excel file success.')
     print('-----------------------------------------------------------------------------------------------------------')
 
-def set_excel_celldata(filename, cell_row, cell_column, data,
-                       sheet='Tabelle1',
-                       path='C:/Users/86781/PycharmProjects/pythonProject/venv/data/'):
-    """This funktion can be used to wirte data into a specified cell quickly."""
-    # TODO
-    pass
 
 def set_excel_column(titel, data, filename, sheet='Tabelle1', path='C:/Users/86781/PycharmProjects/pythonProject/venv/data/'):
     df = pd.read_excel(path + filename)

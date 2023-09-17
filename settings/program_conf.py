@@ -7,7 +7,7 @@ class Common_Env(object):
 
     # is the program run in the test mode?
     # (shorten test area's side length to reduce calculation burden significantly and thus raise efficiency)
-    TEST_MODE = True
+    TEST_MODE = False
 
     # update the .pbf files and population density file before running the program?
     # Please note: when the .pbf files or the people density files do not exist, the update procedure will be triggered.
@@ -28,11 +28,14 @@ class Common_Env(object):
     # unless "Use_online_Nominatim_server" is set to False, this server is going to be used
     Nominatim_server_online = "nominatim.openstreetmap.org"
 
+    # use external programs to generate the shop-block center distance database
+    USE_EXT_PGM_DISTANCE = False
+
     # the bounding box's side length, default=0.0003
     bounding_box = 0.0003
 
     # the year of calculation for the program, and should be in range 2000-2025
-    YEAR = 2007
+    YEAR = 2002
 
     # the month of calculation for the program, and should be in range 1-12 E.g., for August use number 8 rather than 08
     MONTH = 2
@@ -52,7 +55,7 @@ class Production_Env(Common_Env):
     # --------------------------------data files------------------------------------------------------------------------
 
     # the anylogic program path, only used to get the input .xlsx file
-    ANYLOGIC_PATH = "C:/Users/86781/PycharmProjects/Distribution Model/"
+    ANYLOGIC_PATH = "C:/Users/86781/PycharmProjects/Distribution_Model/"
 
     # the anylogic output path, in which a .csv file with running results can be found
     ANYLOGIC_OUTPUT_PATH = ANYLOGIC_PATH + "Rewe Distribution/"
@@ -62,7 +65,10 @@ class Production_Env(Common_Env):
     # which will be read by the program as input
     ORG_XLSX_PATH = ANYLOGIC_PATH
     ORG_XLSX_NAME = "locations.xlsx"
-    ORG_XLSX_SHEET = "stores"
+    ORG_XLSX_SHEET = "storelocations"
+
+    # the .xlsx file in Anylogic folder as input .xlsx file?
+    USE_ANYLOGIC_FILE_AS_INPUT = True
 
     # the main program path
     PROGRAM_PATH = "C:/Users/86781/PycharmProjects/pythonProject/"
@@ -127,6 +133,11 @@ class Production_Env(Common_Env):
     OSM_PATH = DATA_PATH
     OSM_NAME = "test_area.osm"
 
+    # the extracted .osm file, containing only one shop and its surrounding area's information
+    OSM_TEMP_PATH = DATA_PATH + "osm_temp/"
+    OSM_TEMP_NAME_BASE = "shop_area_temp_"
+    OSM_TEMP_NAME_SUFFIX = ".osm"
+
     # the original-.xlsx file-generated input .xlsx file,
     # containing all to-be-calculated shops (and their coordinates)
     input_xlsx_file_path = DATA_PATH
@@ -138,6 +149,10 @@ class Production_Env(Common_Env):
     test_area_shop_list_name = "test_area_shops.xlsx"
     test_area_shop_list_sheet = "stores"
 
+    # the database .xlsx file for storing the distance between shops and blocks
+    distance_list_path = DATA_PATH
+    distance_list_name = "shop_block_distance.xlsx"
+    distance_list_sheet = "dis"
 
 class Test_Env(Common_Env):
     """

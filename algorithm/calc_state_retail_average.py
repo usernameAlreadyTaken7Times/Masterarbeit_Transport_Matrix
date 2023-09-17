@@ -264,17 +264,16 @@ def get_retail_average(predict_year, predict_state,
     elif mode == 2:
 
         # try to fit the ln(d) with W/P. Instead of rename it with two parameters;
-        # Noted: the data for this curve fitting is only for year 2008-2020, and for
-        # predication for year 2000-2007 only.
-        def func4(x, kp, bp):  # Although has different names, the content is totally the same as the func3 in mode 1.
+        # Noted: the data for this curve fitting is only for year 2000-2013
+        def func4(x, kp, bp):  # Although it has different names, the content is totally the same as the func3 in mode 1.
             return kp * x + bp
 
-        popt4, pcov4 = curve_fit(func4, np.log(BIP_je_Person_state), BIP_handel_state / Einwohner_state)
+        popt4, pcov4 = curve_fit(func4, np.log(BIP_je_Person_state[-9:]), BIP_handel_state[-9:] / Einwohner_state[-9:])
         kp_4, bp_4 = popt4[0], popt4[1]
 
         # load BIP_je_Person data from .xlsx file for year 2000-2007 and import it into the above curve-fitting function
-        BIP_je_Person_state_add = np.zeros(8)
-        for year_temp_2 in range(14, 22):
+        BIP_je_Person_state_add = np.zeros(14)
+        for year_temp_2 in range(14, 28):
             BIP_je_Person_state_add[year_temp_2 - 14] = float(BIP_je_Person.values[year_temp_2][state_num])
 
         return (kp_4 * np.log(BIP_je_Person_state_add[year-2000]) + bp_4) * 1000

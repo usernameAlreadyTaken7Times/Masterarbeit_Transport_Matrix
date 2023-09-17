@@ -55,7 +55,7 @@ def get_route_distance(osm_file, block_cen_lon, block_cen_lat, shop_lon, shop_la
 
     # make sure the distance is always not 0, because the distances are used as denominators in the following steps
     if distance == 0 or distance == 0.0:
-        # here just set minimum distance as 0.3m
+        # here just set the minimum distance as 0.3m
         distance = 0.3
 
     # the driving time between these two points

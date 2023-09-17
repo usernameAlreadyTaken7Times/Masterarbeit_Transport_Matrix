@@ -109,9 +109,6 @@ class get_coordinate_from_address(osmium.SimpleHandler):
             city_match = self.searching_name_city == w.tags['addr:city']
             name_match = self.searching_name_name in w.tags['name'].split()
 
-            # check if the way is closed.
-            # TODO
-
             if street_match and housenumber_match and city_match:
                 if name_match:
                     print('Way match. Geo coordinates stored.')

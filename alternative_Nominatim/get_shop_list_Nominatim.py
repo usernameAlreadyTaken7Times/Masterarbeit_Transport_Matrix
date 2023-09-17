@@ -59,7 +59,7 @@ def shop_list_to_excel(req, path, filename, sheet):
     return 0
 
 
-def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, sheet, mode=0):
+def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, sheet, mode=1):
     """Use Nominatim server to generate the shop list within the given area.
     :param float lon1: Minimum longitude of the test area,
     :param float lat1: minimum latitude of the test area,
@@ -88,10 +88,10 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
              "Karstadt Sports"]
 
     # for online service, use smaller limit for querying
-    if server_ip == "nominatim.openstreetmap.org":
+    if server_ip == "nominatim.openstreetmap.org":  # here I just assume all other ip means a offline server
         limit = 50
     else:
-        limit = 2000
+        limit = 999999  # for offline servers, there is no limitation
 
     def main_cal(url, query, viewbox, limit, mode):
         """This is the main querying program for Nominatim.
@@ -118,7 +118,6 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
             return 0
 
         return req, len(req)
-
 
     def main_cal_mode1(url, query, viewbox, limit):
         """Like the one function before, this function only works for mode1, which involves more than one keyword.
@@ -228,39 +227,71 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
         # set a list to store all request results altogether
         req_whole = []
 
+        # set a para to determine how many subareas should be cut.
+        # the bigger the area is, the more subareas there are.
+        sub_area_side_num = max(round((lon2 - lon1) / 0.02), round((lat2 - lat1) / 0.01)) + 1
+
         # use loop to search for every keyword inside list "query"
         for query_num in range(len(query)):
             req = []
+            # first run the request for one time, if the result is too much, then cut the area into subareas
             req_temp, result_num = main_cal_mode1(url, query[query_num], viewbox, limit)
 
             if result_num == limit:
 
-                print('Area is too big, trying to spilt it into 36 smaller areas (6 * 6).')
-                req_36part = []
+                print("***********************************************************************************************")
+                print(f'Result is too many for keyword {str(query[query_num])},'
+                      f' trying to spilt the area into {str(sub_area_side_num * sub_area_side_num)} small areas'
+                      f' ({str(sub_area_side_num)} * {str(sub_area_side_num)}).')
+                req_part = []
 
-                # loop in evert sub area to find shops
-                for lon_num in range(0, 6):
-                    for lat_num in range(0, 6):
+                # loop in every subarea to find shops
+                for lon_num in range(0, sub_area_side_num):
+                    for lat_num in range(0, sub_area_side_num):
+
+                        print("---------------------------------------------------------------------------------------")
+                        print(f"searching for keyword {str(query[query_num])} "
+                              f"in {str(lon_num * sub_area_side_num + lat_num)}. small areas,"
+                              f" {str(sub_area_side_num * sub_area_side_num)} small areas in total.")
 
                         # set the new viewbox
-                        lon_begin = lon1 + (lon2 - lon1) / 6 * lon_num
-                        lon_end = lon1 + (lon2 - lon1) / 6 * (lon_num + 1)
-                        lat_begin = lat1 + (lat2 - lat1) / 6 * lat_num
-                        lat_end = lat1 + (lat2 - lat1) / 6 * (lat_num + 1)
+                        lon_begin = lon1 + (lon2 - lon1) / sub_area_side_num * lon_num
+                        lon_end = lon1 + (lon2 - lon1) / sub_area_side_num * (lon_num + 1)
+                        lat_begin = lat1 + (lat2 - lat1) / sub_area_side_num * lat_num
+                        lat_end = lat1 + (lat2 - lat1) / sub_area_side_num * (lat_num + 1)
                         viewbox_part = f"{str(lon_begin)},{str(lat_end)},{str(lon_end)},{str(lat_begin)}"
 
+                        # retrieve result
                         req_temp, result_num = main_cal_mode1(url, query[query_num], viewbox_part, limit)
-                        req_36part += req_temp
 
                         if result_num < limit:
-                            if lon_num == 5 and lat_num == 5:  # end the loop
-                                req += req_36part
+                            req_part += req_temp
+                            if lon_num == (sub_area_side_num - 1) and lat_num == (sub_area_side_num - 1):  # end the loop
+                                print(
+                                    f'Found {str(len(req_part))} shops with keyword "{str(query[query_num])}" in the chosen area.')
+                                req += req_part
 
                         else:
                             print(f'A subarea has more than {limit} shops inside.'
-                                  f' That is more than the maximum capacity for the program.'
-                                  f'This block will be ignored and will proceed further.')
-                            pass
+                                  f' Trying to split this area into four subareas.')
+                            # try to cut this area into four sub subareas and retry
+                            for subarea_lon_num in range(0, 2):
+                                for subarea_lat_num in range(0, 2):
+                                    subarea_lon_begin = lon_begin + (lon_end - lon_begin) / 2 * subarea_lon_num
+                                    subarea_lon_end = lon_begin + (lon_end - lon_begin) / 2 * (subarea_lon_num + 1)
+                                    subarea_lat_begin = lat_begin + (lat_end - lat_begin) / 2 * subarea_lat_num
+                                    subarea_lat_end = lat_begin + (lat_end - lat_begin) / 2 * (subarea_lat_num + 1)
+                                    viewbox_subarea = f"{str(subarea_lon_begin)},{str(subarea_lat_end)},{str(subarea_lon_end)},{str(subarea_lat_begin)}"
+
+                                    req_temp_sub, result_num_sub = main_cal_mode1(url, query[query_num], viewbox_subarea, limit)
+
+                                    # here we assume there is no beyond limitation result, write the result back to para
+                                    req_part += req_temp_sub
+
+                            if lon_num == (sub_area_side_num - 1) and lat_num == (sub_area_side_num - 1):  # end the loop
+                                print(
+                                    f'Found {str(len(req_part))} shops with keyword "{str(query[query_num])}" in the chosen area.')
+                                req += req_part
 
                         # if the server does not support continually searching, sleep for 1 sec
                         # time.sleep(1)
@@ -268,6 +299,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
             elif result_num == 0:
                 print(f'No shops found with keyword "{str(query[query_num])}" in the chosen area.')
             else:
+                print(f'Found {str(len(req_temp))} shops with keyword "{str(query[query_num])}" in the chosen area.')
                 req += req_temp
 
             req_whole += req
@@ -322,6 +354,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
 
         # write the results into .xlsx file
         shop_list_to_excel(unique_req, path, filename, sheet)
+        print("-------------------------------------------------------------------------------------------------------")
 
     else:
         print("Mode error.")
@@ -332,10 +365,8 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
 #                             "C:/Users/86781/PycharmProjects/pythonProject/data/",
 #                         "test_area_shops.xlsx", "stores", 1)
 #
-# get_shop_list_Nominatim(10.3137, 51.7973, 10.3646, 51.8156, "nominatim.openstreetmap.org",
+# get_shop_list_Nominatim(9.76195, 52.39727, 9.77468, 52.40180, "nominatim.openstreetmap.org",
 #                             "C:/Users/86781/PycharmProjects/pythonProject/data/",
 #                         "input_shops.xlsx", "stores", 1)
-
-# a = haversine(10.3638382, 51.8016557, 10.3572548, 51.8031631)
-
+#
 # pass

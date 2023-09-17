@@ -1,14 +1,15 @@
 import sys
-
 import osmnx as ox
 import networkx as nx
 from osmnx import graph_from_xml
 import pandas
 import os
-from multiprocessing import Process, cpu_count, Pool, Manager
+from multiprocessing import cpu_count, Pool, Manager
 
-from Anylogic_data_process.Anylogic_distance_settings import Anylogic_distance_settings
+from settings.Anylogic_related_settings import Anylogic_related_settings
 from osm_object_Methods.osm_extract_from_pbf import osm_extract_from_pbf
+from Anylogic_data_process.Nominatim_to_Anylogic_shop import Nominatim_to_Anylogic_shop
+from Anylogic_data_process.set_locations import *
 
 
 class cal():
@@ -17,7 +18,7 @@ class cal():
         self.dis_list = self.manager().list()
 
     # build a function for route distance calculating in process pool
-    def distance_cal(self, G, Arg, num):
+    def distance_cal(self, G, Arg, num, all_num):
         # argument in the order of G, lon1, lat1, lon2, lat2, id_num
 
         # append the input coordinates to the nodes in .osm file
@@ -25,14 +26,14 @@ class cal():
         dest = ox.nearest_nodes(G, X=Arg[2], Y=Arg[3])
 
         dis = nx.shortest_path_length(G, orig, dest, weight='length')  # unit in meter
-        print(f'{num}. data finishes.')
+        print(f'{num}. record finishes, total {str(all_num)} records.')
         self.dis_list.append(dis)
         return dis
 
     def flow(self, G, Arg, cpu_num, loop_num):
         pool = Pool(cpu_num)
         for i in range(loop_num):
-            pool.apply_async(self.distance_cal, args=(G, Arg[i], i))
+            pool.apply_async(self.distance_cal, args=(G, Arg[i], i, loop_num))
         pool.close()
         pool.join()
 
@@ -102,22 +103,47 @@ def Anylogic_distance_gernerator(osm_tool, pbf_path, pbf_name, osm_path, osm_nam
 
 
 if __name__ == '__main__':
-    # test code
-    list_coord, list_ori, list_dest = Anylogic_distance_gernerator(Anylogic_distance_settings.OSM_TOOL_PATH,
-                                                                   Anylogic_distance_settings.pbf_path,
-                                                                   Anylogic_distance_settings.pbf_name,
-                                                                   Anylogic_distance_settings.osm_path,
-                                                                   Anylogic_distance_settings.osm_name,
-                                                                   Anylogic_distance_settings.distributors_file,
-                                                                   Anylogic_distance_settings.distributors_file_sheet,
-                                                                   Anylogic_distance_settings.shop_file,
-                                                                   Anylogic_distance_settings.shop_file_sheet,
-                                                                   Anylogic_distance_settings.distance_file)
+
+    # first, use the input coordinates to create a Anylogic program format shop location file
+    # please CHANGE the coordinates here!!!
+    lon_1 = 11.0029
+    lat_1 = 53.1379
+    lon_2 = 11.0538
+    lat_2 = 53.1557
+
+    # generate the shop location .xlsx file
+    Nominatim_to_Anylogic_shop(lon_1, lat_1, lon_2, lat_2,
+                               Anylogic_related_settings.Nominatim_shop_list_path,
+                               Anylogic_related_settings.Nominatim_shop_list_name,
+                               Anylogic_related_settings.Nominatim_shop_list_sheet,
+                               Anylogic_related_settings.shop_file,
+                               Anylogic_related_settings.shop_file_sheet)
+
+    # set the distributor's location
+    distributor_num = 1  # CHANGE
+    # generate the distributor location .xlsx file
+    set_distributor_location(lon_1, lat_1, lon_2, lat_2,
+                             Anylogic_related_settings.distributors_file,
+                             Anylogic_related_settings.distributors_file_sheet, distributor_num)
+
+    # then use this script's code to generate the corresponding distance database
+    list_coord, list_ori, list_dest = Anylogic_distance_gernerator(Anylogic_related_settings.OSM_TOOL_PATH,
+                                                                   Anylogic_related_settings.pbf_path,
+                                                                   Anylogic_related_settings.pbf_name,
+                                                                   Anylogic_related_settings.osm_path,
+                                                                   Anylogic_related_settings.osm_name,
+                                                                   Anylogic_related_settings.distributors_file,
+                                                                   Anylogic_related_settings.distributors_file_sheet,
+                                                                   Anylogic_related_settings.shop_file,
+                                                                   Anylogic_related_settings.shop_file_sheet,
+                                                                   Anylogic_related_settings.distance_file)
 
     cpu_num = cpu_count()
 
     # read the osm file and store it as a graph for further distance calculating
-    G = graph_from_xml(Anylogic_distance_settings.osm_path + Anylogic_distance_settings.osm_name)
+    G = graph_from_xml(Anylogic_related_settings.osm_path + Anylogic_related_settings.osm_name)
+
+    print(f"Total {str(len(list_coord))} records.")
 
     cal1 = cal()
     cal1.flow(G=G, Arg=list_coord, cpu_num=cpu_num, loop_num=len(list_coord))
@@ -128,13 +154,24 @@ if __name__ == '__main__':
                               index=range(len(list_coord)))
 
     for row in range(len(dis)):
-        output.at[row, ""] = int(row + 1)
+        output.at[row, ""] = int(row)
         output.at[row, "origin"] = str(list_ori[row])
         output.at[row, "destination"] = str(list_dest[row])
         output.at[row, "distance"] = float(dis[row] / 1000)
 
-    output.to_excel(Anylogic_distance_settings.distance_file,
-                    sheet_name=Anylogic_distance_settings.distance_file_sheet,
+    # generate the distance database .xlsx file
+    output.to_excel(Anylogic_related_settings.distance_file,
+                    sheet_name=Anylogic_related_settings.distance_file_sheet,
                     index=False)
 
+    # generate a vehicle information .xlsx file (always unchanged one)
+    set_vehicle_info(Anylogic_related_settings.v_info_file, Anylogic_related_settings.v_info_sheet)
+
+    # generate a logistic center's (Logistikszentrum) coordinates
+    set_logistics_center_info(lon_1, lat_1, lon_2, lat_2, Anylogic_related_settings.lc_info_txt_file)
+
+    # till now, all four .xlsx shops are generated, which are essential to the Anylogic program.
+    print("All four needed file generated. Generating program ends.")
+
+    pass
     sys.exit()

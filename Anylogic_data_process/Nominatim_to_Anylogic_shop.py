@@ -1,12 +1,24 @@
 from alternative_Nominatim.get_shop_list_Nominatim import get_shop_list_Nominatim
-from Anylogic_data_process.Anylogic_distance_settings import *
 import pandas
 import os
+import random
 
 
 def Nominatim_to_Anylogic_shop(lon1, lat1, lon2, lat2, file_path, file_name, file_sheet, shop_file, shop_file_sheet):
     """This function can be used to transform the result of Nominatim query to the format of
     the Anylogic-inputted shop_location list, which is in the form of num-id-lat-lon-address format.
+    This file aims to create an Anylogic-program-format shop database and then used as
+    :param lon1: the longitude of point 1,
+    :param lat1: the latitude of point 1,
+    :param lon2: the longitude of point 2,
+    :param lat2: the latitude of point 2,
+    :param file_path: the path of Nominatim result file,
+    :param file_name: the name of Nominatim result file,
+    :param file_sheet: the sheet name of Nominatim result file,
+    :param shop_file: the path and name of the shop location .xlsx file,
+     which is used as the database file for Anylogic program,
+    :param shop_file_sheet: the sheet name of the shop location .xlsx file,
+    which is used as the database file for Anylogic program.
     """
 
     # use online server and retrieve the results
@@ -17,7 +29,7 @@ def Nominatim_to_Anylogic_shop(lon1, lat1, lon2, lat2, file_path, file_name, fil
     # delete the result file
     os.remove(file_path + file_name)
 
-    # reformat the file
+    # format the Anylogic database .xlsx file
     new_location = pandas.DataFrame(columns=["", "id", "lat", "lon", "address"], index=range(len(shop_list)))
 
     if len(shop_list) <= 999:
@@ -35,6 +47,8 @@ def Nominatim_to_Anylogic_shop(lon1, lat1, lon2, lat2, file_path, file_name, fil
         new_location.at[row, "address"] = str(shop_list.values[row][2])
 
     new_location.to_excel(shop_file, sheet_name=shop_file_sheet, index=False)
+    print("New shop locations written to the .xlsx file.")
+    print("---------------------------------------------")
 
 
 # test code
@@ -44,10 +58,11 @@ def Nominatim_to_Anylogic_shop(lon1, lat1, lon2, lat2, file_path, file_name, fil
 #                            Anylogic_distance_settings.Nominatim_shop_list_sheet,
 #                            Anylogic_distance_settings.shop_file,
 #                            Anylogic_distance_settings.shop_file_sheet)
-Nominatim_to_Anylogic_shop(13.3747, 52.5101, 13.4002, 52.5191,
-                           Anylogic_distance_settings.Nominatim_shop_list_path,
-                           Anylogic_distance_settings.Nominatim_shop_list_name,
-                           Anylogic_distance_settings.Nominatim_shop_list_sheet,
-                           Anylogic_distance_settings.shop_file,
-                           Anylogic_distance_settings.shop_file_sheet)
-pass
+# Nominatim_to_Anylogic_shop(13.3747, 52.5101, 13.4002, 52.5191,
+#                            Anylogic_distance_settings.Nominatim_shop_list_path,
+#                            Anylogic_distance_settings.Nominatim_shop_list_name,
+#                            Anylogic_distance_settings.Nominatim_shop_list_sheet,
+#                            Anylogic_distance_settings.shop_file,
+#                            Anylogic_distance_settings.shop_file_sheet)
+#
+# pass

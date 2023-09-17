@@ -10,7 +10,7 @@ from osm_time.opening_hours import OpeningHours
 import numpy as np
 
 
-def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street_list, osm_file, tlr, lon_org, lat_org,
+def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumber_list, street_list, osm_file, tlr, lon_org, lat_org,
                          check_node=1, predict_node_boundary=0, keyword_as_supermarket=0):
     """
      As a supplement to the osm search program,
@@ -432,57 +432,58 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
         # --------------------------------para init ends-----------------------------------------------
         # -------------------------------data reading -------------------------------------------------
         # loop the element tags for information
-        if element.getElementsByTagName("tag"):
+        if element is not None:
+            if element.getElementsByTagName("tag"):
 
-            # loop to go through all tags of this element
-            for tag_num in range(len(element.getElementsByTagName("tag"))):
+                # loop to go through all tags of this element
+                for tag_num in range(len(element.getElementsByTagName("tag"))):
 
-                # check if the element has a tag about 'wheelchair'
-                if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'wheelchair':
-                    if element.getElementsByTagName("tag")[tag_num].getAttribute("v") == 'yes':
-                        wheelchair = True
+                    # check if the element has a tag about 'wheelchair'
+                    if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'wheelchair':
+                        if element.getElementsByTagName("tag")[tag_num].getAttribute("v") == 'yes':
+                            wheelchair = True
 
-                # Normally, there is no tag record showing directly weather a shop has a WC or not.
-                # So just read the toilet_wheelchair record.
-                # When that record is available, no matter what the value is, I assume there is a usable WC.
+                    # Normally, there is no tag record showing directly weather a shop has a WC or not.
+                    # So just read the toilet_wheelchair record.
+                    # When that record is available, no matter what the value is, I assume there is a usable WC.
 
-                # check toilet_wheelchair
-                if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'toilets:wheelchair':
-                    toilet = True
-                    if element.getElementsByTagName("tag")[tag_num].getAttribute("v") == 'yes':
-                        toilet_wheelchair = True
+                    # check toilet_wheelchair
+                    if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'toilets:wheelchair':
+                        toilet = True
+                        if element.getElementsByTagName("tag")[tag_num].getAttribute("v") == 'yes':
+                            toilet_wheelchair = True
 
-                # test if payment method is rich
-                if 'payment' in element.getElementsByTagName("tag")[tag_num].getAttribute("k").split(':'):
-                    if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'payment:coins':
-                        # allow coin exchange or all-coins payment? That's unusual.
-                        payment_coin = True
-                    if element.getElementsByTagName("tag")[tag_num].getAttribute("k") != 'payment:coins' and \
-                        element.getElementsByTagName("tag")[tag_num].getAttribute("k") != 'payment:cash':
-                        # Besides coin and cash payment, the more paying methods the shop supports, the higher its grade
-                        # should be.
-                        payment_num += 1
+                    # test if payment method is rich
+                    if 'payment' in element.getElementsByTagName("tag")[tag_num].getAttribute("k").split(':'):
+                        if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'payment:coins':
+                            # allow coin exchange or all-coins payment? That's unusual.
+                            payment_coin = True
+                        if element.getElementsByTagName("tag")[tag_num].getAttribute("k") != 'payment:coins' and \
+                            element.getElementsByTagName("tag")[tag_num].getAttribute("k") != 'payment:cash':
+                            # Besides coin and cash payment, the more paying methods the shop supports, the higher its grade
+                            # should be.
+                            payment_num += 1
 
-                # test the opening hours
-                if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'opening_hours':
-                    opening_hours_tag = element.getElementsByTagName("tag")[tag_num].getAttribute("v")
+                    # test the opening hours
+                    if element.getElementsByTagName("tag")[tag_num].getAttribute("k") == 'opening_hours':
+                        opening_hours_tag = element.getElementsByTagName("tag")[tag_num].getAttribute("v")
 
-                # Here use OpeningHours package to process the complex osm opening_hours string.
-                # However, it has trouble processing the time string like "08:00-13:00" without day information.
-                # (You will NEVER know what people can type in an .osm tag.)
-                if len(opening_hours_tag.split()) == 1:
-                    # set the working day
-                    opening_hours_tag = f"{'Mo-Fr '}{opening_hours_tag}"
+                    # Here use OpeningHours package to process the complex osm opening_hours string.
+                    # However, it has trouble processing the time string like "08:00-13:00" without day information.
+                    # (You will NEVER know what people can type in an .osm tag.)
+                    if len(opening_hours_tag.split()) == 1:
+                        # set the working day
+                        opening_hours_tag = f"{'Mo-Fr '}{opening_hours_tag}"
 
-                # if OpeningHours function cannot parse the input working hour string, use standard instead
-                try:
-                    definition = OpeningHours(opening_hours_tag)
-                except Exception as e:
-                    print(str(e))
-                    print('An error occurred when reading the opening hours tag of the shop. Use standard working'
-                          ' time instead.')
-                    # set a standard working hours
-                    definition = OpeningHours('Mo-Fr 09:00-20:00')
+                    # if OpeningHours function cannot parse the input working hour string, use standard instead
+                    try:
+                        definition = OpeningHours(opening_hours_tag)
+                    except Exception as e:
+                        print(str(e))
+                        print('An error occurred when reading the opening hours tag of the shop. Use standard working'
+                              ' time instead.')
+                        # set a standard working hours
+                        definition = OpeningHours('Mo-Fr 09:00-20:00')
 
         # -------------------------------data reading ends --------------------------------------------
         # -------------------------------data process -------------------------------------------------
@@ -601,9 +602,17 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
                     way_id = way_ref_meet_condition[way_num]
 
             # also get the way meet the standard for way assessment
-            for way in ways:
-                if way.getAttribute("id") == way_id:
-                    way_temp = way
+            if way_id != 0:  # found at least two ways meeting the standard
+                for way in ways:
+                    if way.getAttribute("id") == way_id:
+                        way_temp = way
+                        print("Found a way containing this shop node. Using it as shop boundary.")
+            else:  # found just one match
+                way_id = way_ref_meet_condition[0]
+                for way in ways:
+                    if way.getAttribute("id") == way_id:
+                        way_temp = way
+                        print("Found a way containing this shop node. Using it as shop boundary.")
         else:
             print('No matched way containing this shop node. Please use standard data instead.')
 
@@ -624,8 +633,6 @@ def get_shop_way_ref_osm(lon_list, lat_list, name_list, housenumber_list, street
     area_list = []
 
     for shop_num in range(len(lon_list)):  # search for every shop record
-
-        print(f"Searching for the {str(shop_num+1)}st shop's information in .osm file, total {len(lon_list)} shops.")
 
         # the area and influence of the shop's infrastructure, and will be directly applied to the building area
         # of the shop
