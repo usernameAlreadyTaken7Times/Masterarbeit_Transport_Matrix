@@ -296,6 +296,9 @@ def get_retail_average(predict_year, predict_state,
     else:
         return 0
 
-# # test code
-# abc = get_retail_average(2014,'Niedersachsen')
+# test code
+# for i in range(16): # only for test state name
+#     for year in range(2000, 2026):
+#         abc = get_retail_average(year, i+1)
+#         print(abc)
 # pass

@@ -1,8 +1,10 @@
 import sys
-from multiprocessing import Process, cpu_count, Pool, Manager
 from osmnx import graph_from_xml
 import osmnx as ox
 import networkx as nx
+import shutil
+import time
+# from multiprocessing import Process, cpu_count, Pool, Manager
 
 # settings
 from settings.program_conf import *
@@ -22,7 +24,7 @@ from algorithm.calc_shop_attraction import get_shop_attraction
 from algorithm.get_test_area_customer_shop_possibility import get_test_area_customer_shop_possibility_from_xlsx
 from algorithm.get_test_area_retail_inflation_correction import get_test_area_retail_inflation_correction
 from algorithm.get_test_area_retail_month_correction import get_test_area_retail_month_correction
-from osm_object_Methods.get_shop_info_osm import add_shop_info_column_to_excel
+# from osm_object_Methods.get_shop_info_osm import add_shop_info_column_to_excel
 from algorithm.get_test_area_retail_day_correction import get_test_area_retail_day_correction
 from algorithm.get_RLS_retail_data import get_RLS_retail_data
 
@@ -38,6 +40,9 @@ if __name__ == '__main__':
     """
     This program aims to estimate the shipment of shops in a given .xlsx file. 
     """
+
+    # start time
+    start_time = time.time()
 
     # Prepare with the configration file: read config file and store the paths for the file and scripts,
     # and should not be activated together with test environment (see below this code block)
@@ -186,6 +191,8 @@ if __name__ == '__main__':
     else:
         print('.osm file extracted and stored.')
 
+    print("----------------------------------------------------------------------------------")
+
     # indentify the shops' state using input .xlsx file (here we assume all shops are in the same state)
     state = get_excel_address_state(config.input_xlsx_file_path + config.input_xlsx_file_name,
                                     config.input_xlsx_file_sheet)
@@ -222,9 +229,9 @@ if __name__ == '__main__':
     # at the same time, store the order of the inputted Excel file's shops in test area 0, 1&2 for further use
 
     result_temp = get_shop_info_osm_multi_OSM_test(config.bounding_box,
-                                   config.OSM_PATH + config.OSM_NAME,
-                                   config.test_area_shop_list_path + config.test_area_shop_list_name,
-                                   config.input_xlsx_file_sheet, config.test_area_shop_list_sheet)
+                                                   config.input_xlsx_file_path + config.input_xlsx_file_name,
+                                                   config.test_area_shop_list_path + config.test_area_shop_list_name,
+                                                   config.input_xlsx_file_sheet, config.test_area_shop_list_sheet)
     shop_order = result_temp[0]
     shop_lon_list = result_temp[1]
     shop_lat_list = result_temp[2]
@@ -288,6 +295,8 @@ if __name__ == '__main__':
         add_shop_info_column_to_excel(config.test_area_shop_list_path + config.test_area_shop_list_name,
                                       config.test_area_shop_list_sheet, shop_infra_list, 'infra_factor')
 
+    print("----------------------------------------------------------------------------------")
+
     # retrieve the shops' attraction data inside the whole test area 0, 1&2
     test_area_shops_attraction = get_shop_attraction(config.test_area_shop_list_path + config.test_area_shop_list_name,
                                                      config.test_area_shop_list_sheet)
@@ -308,11 +317,14 @@ if __name__ == '__main__':
         # cpu_num = cpu_count()
 
         # read the osm file and store it as a graph for further distance calculating
+        print("Creating the distance database for the program now.")
+        print('-------------------------------------')
         G = graph_from_xml(config.OSM_PATH + config.OSM_NAME)
 
         dis = []
         # this part could be replaced by the further multiprocessing program
         for list_num in range(len(list_coord)):
+            print(f'Calculating {list_num+1}. distance record. Total {len(list_coord)} data records.')
             orig = ox.nearest_nodes(G, X=list_coord[list_num][0], Y=list_coord[list_num][1])
             dest = ox.nearest_nodes(G, X=list_coord[list_num][2], Y=list_coord[list_num][3])
             length = nx.shortest_path_length(G, orig, dest, weight='length')
@@ -327,6 +339,10 @@ if __name__ == '__main__':
         distance_writer(list_shop, list_block, dis,
                         config.distance_list_path + config.distance_list_name,
                         config.distance_list_sheet)
+
+    print('-------------------------------------')
+    print("Distance data written to .xlsx file.")
+    print('-------------------------------------')
 
     # the customer number list of the shops
     shops_customer = []
@@ -419,29 +435,66 @@ if __name__ == '__main__':
     else:
         raise ValueError
 
-    # convert the retail sale amount into retail good weight
-    retail_amount = [i / RLS_retail for i in sale_amount_corrected_day]
+    # convert the retail sale amount into retail good weight(kg)
+    retail_amount_kg = [i / RLS_retail for i in sale_amount_corrected_day]
 
-    # write the sale amount back to the input .xlsx file
+    # the Anylogic program demands the unit of good mass as ton, so need to convert unit
+    retail_amount = [i / 1000 for i in retail_amount_kg]
+
+    # ---------------------------------------TBD----------------------------------------------------------------------
+    # IMPORTANT note: Since the Anylogic program cannot deal with order with more than 14 ton/day,
+    # here force set amount over 14 ton to 14 in order to avoid further questions.
+    # this is not a mistake or limitation in this calculating program, so after modifying the Anylogic program,
+    # this part of the code can be, and should be deleted.
+    for i in range(len(retail_amount)):
+        if retail_amount[i] >= 14:
+            retail_amount[i] = 13.99
+    # -----------------------------------end TBD----------------------------------------------------------------------
+
+    print('-------------------------------------------')
+
+    # write the sale amount back to the input .xlsx file ()
     add_shop_info_column_to_excel(config.input_xlsx_file_path + config.input_xlsx_file_name,
                                   config.input_xlsx_file_sheet,
                                   retail_amount,
                                   "retail_amount_weight")
 
+    # duplicate the original .xlsx file and store the new column data into the new .xlsx file
     # write the sale amount back to the original .xlsx file in Anylogic program folder
     if config.USE_ANYLOGIC_FILE_AS_INPUT:
-        add_shop_info_column_to_excel(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
-                                      config.ORG_XLSX_SHEET,
+
+        # create a duplication of original .xlsx file in the new Anylogic program folder
+        shutil.copy(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
+                    config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME)
+
+        # write the data into the new file
+        add_shop_info_column_to_excel(config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME,
+                                      config.ORG_XLSX_WITH_RST_SHEET,
                                       retail_amount,
                                       "retail_amount_weight")
 
-    print("Data written back into the .xlsx file in Anylogic program path, the calculation process ends.")
+    # test if the file is successfully created
+    if os.path.exists(config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME):
+        pass
+    else:
+        print(f"The output file in path {config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME} is not created."
+              f" Something is wrong. Please check your code.")
+    print('-------------------------------------------------------------------------------------------------')
+    print('-------------------------------------------------------------------------------------------------')
+    print(f'Total program execution time: {str(time.time() - start_time)} seconds.\n'
+          f'Input shops: {str(len(input_shop_xlsx))},\n'
+          f'Area shops: {str(len(shop_lon_list))},\n'
+          f'Blocks (in test areas 0&1): {str(len(area_info[1])+len(area_info[7]))},\n'
+          f'Blocks (in total test areas): {str(len(area_info[1])+len(area_info[7])+len(area_info[13]))}.')
+    print('-------------------------------------------------------------------------------------------------')
+    print(f"Data written back into the .xlsx file in Anylogic program path, the calculation process is finished.")
+    print('-------------------------------------------------------------------------------------------------')
+    print('-------------------------------------------------------------------------------------------------')
 
     # then the Anylogic model can be run.
     # after running the model and generating a .csv output file,
     # the function "Anylogic_output_csv_process" in "Anylogic_data_process" can be of help in processing result data.
 
-    pass
     sys.exit()
 
 else:

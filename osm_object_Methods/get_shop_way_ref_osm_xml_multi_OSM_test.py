@@ -34,7 +34,7 @@ def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumb
      :param int predict_node_boundary: if the shop is found as a node and not part of a way, then the area can not be
       calculated. Then if predict_node_boundary=1, then the program will loop to find the smallest way containing the
       shop node and use the way's area as shop area. If predict_node_boundary=0, the program will use a standard shop
-      area, 200m^2. Default predict_node_boundary=0,
+      area, 350m^2. Default predict_node_boundary=0,
      :param int keyword_as_supermarket: the searching keyword condition, weather use a "Supermarket" or just "shop".
      In an .osm file, the range of an element with a "shop" tag is rather wide: it does not have to be a retail shop.
      So if you want to make it strict, then you can set keyword_as_supermarket=1, and it means force use "Supermarket"
@@ -639,8 +639,8 @@ def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumb
         area = 0
         factor = 1
 
-        # average building area of a retail shop
-        avg_building_area = 200.00
+        # average building area of a retail shop, default = 350m^2
+        avg_building_area = 350.00
 
         # Theoretically, nodes make of ways in an .osm file.
         # But a node does not have to make of ways,
@@ -816,6 +816,9 @@ def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumb
 
                 if shop_match and geo_match:
                     area = get_area(get_way_nodes_coordinates_with_ref(node_list, nodes), lon_org, lat_org)
+                    # when there's any error about area calculating, the small way just makes up a node area
+                    if area == 0:
+                        area = avg_building_area
                     break
 
         # If the program goes this far and has not been jumped out of the loop,
@@ -839,23 +842,23 @@ def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumb
                         factor = shop_element_assessment(way_smallest_match)
                     # if the determine_shop_node_boundary has not found any matched way
                     else:
-                        area = 200.00
+                        area = avg_building_area
                         factor = shop_element_assessment(node_temp)
 
                 # if the node_searching_program has not found any matched shop node
                 else:
                     print('One of your input shop record seems not available in .osm file. Use standard data instead.')
-                    # the area of a node is always 0, so use a standard shop building area, 200m^2 instead
-                    area = 200.00
+                    # the area of a node is always 0, so use a standard shop building area, 350m^2 instead
+                    area = avg_building_area
                     factor = 1
             else:
                 print('Use standard building area as shop\'s area.')
 
                 if node_find_match:
-                    area = 200.00
+                    area = avg_building_area
                     factor = shop_element_assessment(node_temp)
                 else:
-                    area = 200.00
+                    area = avg_building_area
                     factor = 1
 
             area_list.append(area)
@@ -865,10 +868,11 @@ def get_shop_way_ref_osm_multi_OSM_test(lon_list, lat_list, name_list, housenumb
             area_list.append(area)
             factor_list.append(factor)
 
-        # for testing only
-        print(f'shop building area {str(area)} added.')
-        print(f'shop attraction {str(factor)} added.')
+        # for output
         print('----------------------')
+        print(f'shop building area {str(area)} added.')
+        print(f'shop attraction factor {str(factor)} added.')
+        # print('----------------------')
 
     return area_list, factor_list
 

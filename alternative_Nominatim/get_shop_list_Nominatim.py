@@ -85,7 +85,7 @@ def get_shop_list_Nominatim(lon1, lat1, lon2, lat2, server_ip, path, filename, s
              "Douglas", "Kaufland", "OBI", "C&A", "Fielmann", "Deichmann", "Weltbild", "Otto", "H&M", "Saturn", "Real",
              "Kaufhof", "Hornbach", "Netto", "Fressnapf", "Esprit", "Neckermann", "Thalia", "Bauhaus", "Media Markt",
              "S. Oliver", "Zalando", "Penny", "Müller", "Apollo Optik", "NewYorker", "Praktiker", "Intersport",
-             "Karstadt Sports"]
+             "Karstadt Sports", "Bäckerei", "Apotheke"]
 
     # for online service, use smaller limit for querying
     if server_ip == "nominatim.openstreetmap.org":  # here I just assume all other ip means a offline server

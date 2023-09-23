@@ -11,7 +11,7 @@ class Common_Env(object):
 
     # update the .pbf files and population density file before running the program?
     # Please note: when the .pbf files or the people density files do not exist, the update procedure will be triggered.
-    UPDATE_PBF = True
+    UPDATE_PBF = False
     UPDATE_DST = False
 
     # weather the downloading of the whole Europe's .pbf file is allowed,
@@ -34,11 +34,15 @@ class Common_Env(object):
     # the bounding box's side length, default=0.0003
     bounding_box = 0.0003
 
-    # the year of calculation for the program, and should be in range 2000-2025
-    YEAR = 2002
+    # The year of calculation for the program, and should be in range 2000-2025
+    # Note: Although this program support a year range between 2000-2025,
+    # but only the data between 2014-2022 is valid.
+    # The data outside this period is based on fitting, so it could contain large error.
+    # Thus, it is highly recommended to run this calculation program in year 2014-2022.
+    YEAR = 2004
 
     # the month of calculation for the program, and should be in range 1-12 E.g., for August use number 8 rather than 08
-    MONTH = 2
+    MONTH = 8
 
 
 class Production_Env(Common_Env):
@@ -54,18 +58,21 @@ class Production_Env(Common_Env):
 
     # --------------------------------data files------------------------------------------------------------------------
 
-    # the anylogic program path, only used to get the input .xlsx file
-    ANYLOGIC_PATH = "C:/Users/86781/PycharmProjects/Distribution_Model/"
-
-    # the anylogic output path, in which a .csv file with running results can be found
-    ANYLOGIC_OUTPUT_PATH = ANYLOGIC_PATH + "Rewe Distribution/"
-    ANYLOGIC_OUTPUT_CSV_NAME = "outputFile.csv"
+    # the original Anylogic program path, only used to get the input .xlsx file
+    ANYLOGIC_PATH = "C:/Users/86781/PycharmProjects/Rewe_Distribution_org/"
 
     # original shop .xlsx file path, name and sheet name,
     # which will be read by the program as input
     ORG_XLSX_PATH = ANYLOGIC_PATH
     ORG_XLSX_NAME = "locations.xlsx"
     ORG_XLSX_SHEET = "storelocations"
+
+    # the new Anylogic program path
+    ANYLOGIC_PATH_NEW = "C:/Users/86781/PycharmProjects/Rewe_Distribution_new/"
+    # duplicated original .xlsx file, which will be used to add the good-weight data column
+    ORG_XLSX_WITH_RST_PATH = ANYLOGIC_PATH_NEW
+    ORG_XLSX_WITH_RST_NAME = "locations_with_good_weight.xlsx"
+    ORG_XLSX_WITH_RST_SHEET = "storelocations"
 
     # the .xlsx file in Anylogic folder as input .xlsx file?
     USE_ANYLOGIC_FILE_AS_INPUT = True

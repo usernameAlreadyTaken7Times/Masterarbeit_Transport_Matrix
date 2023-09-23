@@ -168,8 +168,15 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
     # Area 0 is the square, in which all the shops are located; Note: it also contains blocks with no shop in it.
     # Area 1 is the outer region. People and shops inside area 1 will be counted for simulation.
     # Area 2 is the more outer region. In this area, only the shops will be counted.
-    area_1_add = int(0.15 * (span_lat + span_lon) / 2)
-    area_2_add = int(0.20 * (span_lat + span_lon) / 2)
+
+    # How much this extension distances of area 1 and area 2 should be, is determined by the block type:
+    # city or countryside or between them.
+    # However, in this calculation process, there is no way to distinguish them.
+    # So a valid way to choose a suit value,
+    # is just to run the calculation program with different values for times,
+    # and when the result is close enough, then we could assume the value is suitable for this block or shop list.
+    area_1_add = int(0.5 * (span_lat + span_lon) / 2)
+    area_2_add = int(0.5 * (span_lat + span_lon) / 2)
 
     # in the so-called test_mode, the area_1 and area_2's expand is significantly reduced to save calculation power.
     if test_mode:
@@ -181,7 +188,6 @@ def get_area_blocks_idx(lon_min, lat_min, lon_max, lat_max, test_mode=True, mode
             area_1_add = 3
         if area_2_add <= 1:
             area_2_add = 2
-
 
     # csv ID list init
     area_0_ID_list = []

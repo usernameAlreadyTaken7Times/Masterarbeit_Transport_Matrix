@@ -2,14 +2,64 @@ import sys
 import osmnx as ox
 import networkx as nx
 from osmnx import graph_from_xml
+from multiprocessing import cpu_count, Pool, Manager
+import shutil
 import pandas
 import os
-from multiprocessing import cpu_count, Pool, Manager
+from alternative_Nominatim.get_shop_list_Nominatim import get_shop_list_Nominatim
 
 from settings.Anylogic_related_settings import Anylogic_related_settings
 from osm_object_Methods.osm_extract_from_pbf import osm_extract_from_pbf
-from Anylogic_data_process.Nominatim_to_Anylogic_shop import Nominatim_to_Anylogic_shop
+# from Anylogic_data_process.Nominatim_to_Anylogic_shop import Nominatim_to_Anylogic_shop
 from Anylogic_data_process.set_locations import *
+
+
+
+def Nominatim_to_Anylogic_shop(lon1, lat1, lon2, lat2, file_path, file_name, file_sheet, shop_file, shop_file_sheet):
+    """This function can be used to transform the result of Nominatim query to the format of
+    the Anylogic-inputted shop_location list, which is in the form of num-id-lat-lon-address format.
+    This file aims to create an Anylogic-program-format shop database and then used as
+    :param lon1: the longitude of point 1,
+    :param lat1: the latitude of point 1,
+    :param lon2: the longitude of point 2,
+    :param lat2: the latitude of point 2,
+    :param file_path: the path of Nominatim result file,
+    :param file_name: the name of Nominatim result file,
+    :param file_sheet: the sheet name of Nominatim result file,
+    :param shop_file: the path and name of the shop location .xlsx file,
+     which is used as the database file for Anylogic program,
+    :param shop_file_sheet: the sheet name of the shop location .xlsx file,
+    which is used as the database file for Anylogic program.
+    """
+
+    # use online server and retrieve the results
+    get_shop_list_Nominatim(lon1, lat1, lon2, lat2, "nominatim.openstreetmap.org",
+                            file_path, file_name, file_sheet, 1)
+    shop_list = pandas.read_excel(file_path + file_name, sheet_name=file_sheet)
+
+    # delete the result file
+    os.remove(file_path + file_name)
+
+    # format the Anylogic database .xlsx file
+    new_location = pandas.DataFrame(columns=["", "id", "lat", "lon", "address"], index=range(len(shop_list)))
+
+    if len(shop_list) <= 999:
+        pass
+    else:
+        print("Too much results.")
+        raise ValueError
+
+    # write data
+    for row in range(len(shop_list)):
+        new_location.at[row, ""] = int(row)
+        new_location.at[row, "id"] = str("S" + str(row).rjust(3, "0"))
+        new_location.at[row, "lat"] = float(shop_list.values[row][1])
+        new_location.at[row, "lon"] = float(shop_list.values[row][0])
+        new_location.at[row, "address"] = str(shop_list.values[row][2])
+
+    new_location.to_excel(shop_file, sheet_name=shop_file_sheet, index=False)
+    print("New shop locations written to the .xlsx file.")
+    print("---------------------------------------------")
 
 
 class cal():
@@ -105,43 +155,48 @@ def Anylogic_distance_gernerator(osm_tool, pbf_path, pbf_name, osm_path, osm_nam
 if __name__ == '__main__':
 
     # first, use the input coordinates to create a Anylogic program format shop location file
-    # please CHANGE the coordinates here!!!
-    lon_1 = 11.0029
-    lat_1 = 53.1379
-    lon_2 = 11.0538
-    lat_2 = 53.1557
+    # you can CHANGE the coordinates here!!!
+    lon_1 = 10.7276
+    lat_1 = 52.7235
+    lon_2 = 10.7528
+    lat_2 = 52.7325
+
+    config = Anylogic_related_settings
 
     # generate the shop location .xlsx file
     Nominatim_to_Anylogic_shop(lon_1, lat_1, lon_2, lat_2,
-                               Anylogic_related_settings.Nominatim_shop_list_path,
-                               Anylogic_related_settings.Nominatim_shop_list_name,
-                               Anylogic_related_settings.Nominatim_shop_list_sheet,
-                               Anylogic_related_settings.shop_file,
-                               Anylogic_related_settings.shop_file_sheet)
+                               config.Nominatim_shop_list_path,
+                               config.Nominatim_shop_list_name,
+                               config.Nominatim_shop_list_sheet,
+                               config.shop_file,
+                               config.shop_file_sheet)
 
     # set the distributor's location
-    distributor_num = 1  # CHANGE
-    # generate the distributor location .xlsx file
-    set_distributor_location(lon_1, lat_1, lon_2, lat_2,
-                             Anylogic_related_settings.distributors_file,
-                             Anylogic_related_settings.distributors_file_sheet, distributor_num)
+    distributor_num = 1  # you can CHANGE the distributor's number here
+
+    # generate the distributor location .xlsx file,
+    # and store the presentation coordinates of a distributor for further use
+    dis_pre_lon, dis_pre_lat = set_distributor_location(lon_1, lat_1, lon_2, lat_2,
+                                                        config.distributors_file,
+                                                        config.distributors_file_sheet, distributor_num)
 
     # then use this script's code to generate the corresponding distance database
-    list_coord, list_ori, list_dest = Anylogic_distance_gernerator(Anylogic_related_settings.OSM_TOOL_PATH,
-                                                                   Anylogic_related_settings.pbf_path,
-                                                                   Anylogic_related_settings.pbf_name,
-                                                                   Anylogic_related_settings.osm_path,
-                                                                   Anylogic_related_settings.osm_name,
-                                                                   Anylogic_related_settings.distributors_file,
-                                                                   Anylogic_related_settings.distributors_file_sheet,
-                                                                   Anylogic_related_settings.shop_file,
-                                                                   Anylogic_related_settings.shop_file_sheet,
-                                                                   Anylogic_related_settings.distance_file)
+    list_coord, list_ori, list_dest = Anylogic_distance_gernerator(config.OSM_TOOL_PATH,
+                                                                   config.pbf_path,
+                                                                   config.pbf_name,
+                                                                   config.osm_path,
+                                                                   config.osm_name,
+                                                                   config.distributors_file,
+                                                                   config.distributors_file_sheet,
+                                                                   config.shop_file,
+                                                                   config.shop_file_sheet,
+                                                                   config.distance_file)
 
+    # create the distance database with multiprocessing
     cpu_num = cpu_count()
 
     # read the osm file and store it as a graph for further distance calculating
-    G = graph_from_xml(Anylogic_related_settings.osm_path + Anylogic_related_settings.osm_name)
+    G = graph_from_xml(config.osm_path + config.osm_name)
 
     print(f"Total {str(len(list_coord))} records.")
 
@@ -160,18 +215,51 @@ if __name__ == '__main__':
         output.at[row, "distance"] = float(dis[row] / 1000)
 
     # generate the distance database .xlsx file
-    output.to_excel(Anylogic_related_settings.distance_file,
-                    sheet_name=Anylogic_related_settings.distance_file_sheet,
+    output.to_excel(config.distance_file,
+                    sheet_name=config.distance_file_sheet,
                     index=False)
 
-    # generate a vehicle information .xlsx file (always unchanged one)
-    set_vehicle_info(Anylogic_related_settings.v_info_file, Anylogic_related_settings.v_info_sheet)
+    print("Distance database file generated.")
+    print('----------------------------------------------------')
+    # end creating distance database
 
-    # generate a logistic center's (Logistikszentrum) coordinates
-    set_logistics_center_info(lon_1, lat_1, lon_2, lat_2, Anylogic_related_settings.lc_info_txt_file)
+    # delete the unneeded .osm file
+    if os.path.exists(config.osm_path + config.osm_name):
+        os.remove(config.osm_path + config.osm_name)
 
-    # till now, all four .xlsx shops are generated, which are essential to the Anylogic program.
-    print("All four needed file generated. Generating program ends.")
+    # generate a vehicle information .xlsx file (always unchanged ones)
+    set_vehicle_info(config.v_info_file, config.v_info_sheet)
 
-    pass
+    # generate a logistic center's coordinates in an .xlsx file
+    lc_lon, lc_lat = set_logistic_center_location(lon_1, lat_1, lon_2, lat_2,
+                                                  config.lc_info_file,
+                                                  config.lc_info_sheet)
+
+    # and also write some presentation-relevant geo data in the .txt file
+    pre_dis_data = [dis_pre_lon, dis_pre_lat, lc_lon, lc_lat]
+    set_other_pre_info(lon_1, lat_1, lon_2, lat_2, config.other_info_txt_file, pre_dis_data)
+
+    # till now, all six .xlsx shops are generated, which are essential to the Anylogic program.
+    print('----------------------------------------------------------------------------------')
+    print("All six needed file generated. Copying the file to the new Anylogic file folder.")
+    print('----------------------------------------------------------------------------------')
+
+    # create a duplication in the new Anylogic program file
+    shutil.copy(config.distributors_file, config.distributors_file_new)
+    shutil.copy(config.distance_file, config.distance_file_new)
+    shutil.copy(config.v_info_file, config.v_info_file_new)
+    shutil.copy(config.lc_info_file, config.lc_info_file_new)
+    shutil.copy(config.other_info_txt_file, config.other_info_txt_file_new)
+
+    print('----------------------------------------------------------------------------------')
+    print("Copy completed. You may run the calculating program now.")
+    print('----------------------------------------------------------------------------------')
+
+    # Please note: for the new Anylogic program, the "location.xlsx" file is not needed,
+    # but the "locations_with_good_weight.xlsx" file.
+    # This file is generated from the "location.xlsx" file in the original Anylogic program folder.
+    # So in the copying process, this file should not be copied.
+
+    # This script contains error in multiprocessing.
+    # If you stop the program here, all outputs are proceeded without errors.
     sys.exit()
