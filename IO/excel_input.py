@@ -12,16 +12,6 @@ def load_excel(filepath, sheet='Tabelle1'):
     return data
 
 
-def get_excel_celldata(filename, cell_row, cell_column, sheet='Tabelle1',
-                       path='C:/Users/86781/PycharmProjects/pythonProject/venv/data/'):
-    """This funktion can be used to get access to a cell value of the Excel file quickly.
-    Attention: All excel rows and columns starts with 0."""
-
-    data = pd.read_excel(path + filename, sheet_name=sheet)
-    celldata = data.iloc[[cell_row], [cell_column]]
-    return celldata
-
-
 def get_excel_address_state(filepath, sheet):
     """This function aims only to return the state of the shops from a given .xlsx file."""
 

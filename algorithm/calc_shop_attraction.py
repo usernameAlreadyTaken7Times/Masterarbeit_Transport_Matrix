@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from IO.excel_input import load_excel
-from osm_object_Methods.get_shop_info_osm import add_shop_info_column_to_excel
+from osm_object_Methods.get_shop_info_osm_multi_OSM_test import add_shop_info_column_to_excel
 
 def get_shop_attraction(shop_xlsx="C:/Users/86781/PycharmProjects/pythonProject/data/test_area_shops.xlsx",
                         shop_xlsx_sheet="stores"):

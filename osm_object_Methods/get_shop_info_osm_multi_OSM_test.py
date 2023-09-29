@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 
 from IO.excel_input import load_excel
-from osm_object_Methods.get_shop_way_ref_osm_xml import get_shop_way_ref_osm
 
 
 def add_shop_info_column_to_excel(input_excel, sheet_name, info_column, info_name):
