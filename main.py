@@ -1,4 +1,10 @@
 import sys
+from osmnx import graph_from_xml
+import osmnx as ox
+import networkx as nx
+import shutil
+import time
+# from multiprocessing import Process, cpu_count, Pool, Manager
 
 # settings
 from settings.program_conf import *
@@ -10,12 +16,14 @@ from algorithm.calc_test_area_idx_info import *
 from osm_object_Methods.osm_extract_from_pbf import *
 from algorithm.calc_state_retail_average import get_retail_average
 from alternative_Nominatim.get_shop_list_Nominatim import get_shop_list_Nominatim
-from osm_object_Methods.get_shop_info_osm import get_shop_info_osm
+from osm_object_Methods.get_shop_info_osm_multi_OSM_test import get_shop_info_osm_multi_OSM_test
+from osm_object_Methods.get_shop_info_osm_multi_OSM_test import add_shop_info_column_to_excel
+from algorithm.block_shop_distance_generator_function import distance_generator, distance_writer
+from osm_object_Methods.get_shop_way_ref_osm_xml_multi_OSM_test import get_shop_way_ref_osm_multi_OSM_test
 from algorithm.calc_shop_attraction import get_shop_attraction
-from algorithm.get_test_area_customer_shop_possibility import get_test_area_customer_shop_possibility
+from algorithm.get_test_area_customer_shop_possibility import get_test_area_customer_shop_possibility_from_xlsx
 from algorithm.get_test_area_retail_inflation_correction import get_test_area_retail_inflation_correction
 from algorithm.get_test_area_retail_month_correction import get_test_area_retail_month_correction
-from osm_object_Methods.get_shop_info_osm import add_shop_info_column_to_excel
 from algorithm.get_test_area_retail_day_correction import get_test_area_retail_day_correction
 from algorithm.get_RLS_retail_data import get_RLS_retail_data
 
@@ -26,9 +34,13 @@ from update.World_pop_update import POP_update_program
 
 
 if __name__ == '__main__':
+
     """
-    This program aims to estimate the shipment of shops in a given .xlsx file. 
+    This program aims to estimate the shipment of shops. 
     """
+
+    # start time
+    start_time = time.time()
 
     # Prepare with the configration file: read config file and store the paths for the file and scripts,
     # and should not be activated together with test environment (see below this code block)
@@ -36,7 +48,7 @@ if __name__ == '__main__':
         config = Production_Env
     else:
         print('Production configuration parameters are not available. Please check again.')
-        raise FileNotFoundError
+        raise AttributeError
 
     # # the configuration parameters for test environment,
     # # and should not be activated together with production environment (see before this code block)
@@ -134,11 +146,14 @@ if __name__ == '__main__':
     test_area_lat_min = min(area_info[14]) - 0.008
     test_area_lat_max = max(area_info[14]) + 0.008
 
+    # a default indicator for weather allows downloading whole Europe's .pbf file when beyond boundary
+    temp_allow_update_europe_map = -1
+
     # extract the test area .osm file from .pbf file
     try:
         osm_extract_from_pbf(test_area_lon_min, test_area_lat_min, test_area_lon_max, test_area_lat_max,
-                         config.OSM_TOOL_PATH, config.PBF_PATH, config.PBF_WHOLE_NAME,
-                         config.DATA_PATH, config.OSM_NAME)
+                             config.OSM_TOOL_PATH, config.PBF_PATH, config.PBF_WHOLE_NAME,
+                             config.DATA_PATH, config.OSM_NAME)
     except AttributeError:
         print("The input boundary of test area is out of Germany. Even though you choose to download an Europe .pbf "
               "file and extract from it, the calculation result could not be so accurate.")
@@ -167,6 +182,16 @@ if __name__ == '__main__':
         print("Osm file error.")
         raise FileNotFoundError
 
+    # a normal osm file of test areas should not be too small.
+    # when that happens, it indicates an attribute error.
+    if os.path.getsize(config.DATA_PATH + config.OSM_NAME) <= 5000:
+        print(".osm file's attribute error.")
+        raise AttributeError
+    else:
+        print('.osm file extracted and stored.')
+
+    print("----------------------------------------------------------------------------------")
+
     # indentify the shops' state using input .xlsx file (here we assume all shops are in the same state)
     state = get_excel_address_state(config.input_xlsx_file_path + config.input_xlsx_file_name,
                                     config.input_xlsx_file_sheet)
@@ -185,8 +210,8 @@ if __name__ == '__main__':
     # and write the shop list to an .xlsx file
     try:
         get_shop_list_Nominatim(test_area_lon_min, test_area_lat_min, test_area_lon_max, test_area_lat_max,
-                            Nominatim_server, config.test_area_shop_list_path, config.test_area_shop_list_name,
-                            config.test_area_shop_list_sheet, 1)
+                                Nominatim_server, config.test_area_shop_list_path, config.test_area_shop_list_name,
+                                config.test_area_shop_list_sheet, 1)
     except:
         print("Test area coordinates are out of range of Germany.")
         raise ValueError
@@ -198,26 +223,126 @@ if __name__ == '__main__':
             print("Test area shop list file error.")
             raise FileNotFoundError
 
-        # a normal osm file of test areas should not be too small.
-        # when that happens, it indicates an attribute error.
-        if os.path.getsize(config.test_area_shop_list_path + config.test_area_shop_list_name) <= 5000:
-            print(".osm file's attribute error.")
-            raise AttributeError
-        else:
-            print('.osm file extracted and stored.')
-
     # write the shops' info back into the test area's .xlsx file for further attraction calculation, including shop's
     # building area, the influencing parameters which were analyzed from data of the .osm file
     # at the same time, store the order of the inputted Excel file's shops in test area 0, 1&2 for further use
-    shop_order = get_shop_info_osm(test_area_lon_min, test_area_lat_min, config.bounding_box,
-                                   config.OSM_PATH + config.OSM_NAME,
-                                   config.input_xlsx_file_path + config.input_xlsx_file_name,
-                                   config.test_area_shop_list_path + config.test_area_shop_list_name,
-                                   config.input_xlsx_file_sheet, config.test_area_shop_list_sheet)
+
+    result_temp = get_shop_info_osm_multi_OSM_test(config.bounding_box,
+                                                   config.input_xlsx_file_path + config.input_xlsx_file_name,
+                                                   config.test_area_shop_list_path + config.test_area_shop_list_name,
+                                                   config.input_xlsx_file_sheet, config.test_area_shop_list_sheet)
+    shop_order = result_temp[0]
+    shop_lon_list = result_temp[1]
+    shop_lat_list = result_temp[2]
+    shop_name_list = result_temp[3]
+    shop_housenumber_list = result_temp[4]
+    shop_street_list = result_temp[5]
+
+    # init the store list for results of .osm file
+    shop_area_list = []
+    shop_infra_list = []
+
+    for shop_num in range(len(shop_lon_list)):
+        print(f"Looking for {str(shop_num+1)}. shop in .osm file. Total {str(len(shop_lon_list))} shops.")
+
+        # extract the shop surrounding area's osm file, here just assume the .pbf file is always usable,
+        # otherwise use the downloaded whole Europe's .pbf file
+        if temp_allow_update_europe_map == 1:
+            osm_extract_from_pbf(shop_lon_list[shop_num] - config.bounding_box,
+                                 shop_lat_list[shop_num] - config.bounding_box,
+                                 shop_lon_list[shop_num] + config.bounding_box,
+                                 shop_lat_list[shop_num] + config.bounding_box,
+                                 config.OSM_TOOL_PATH, config.PBF_PATH, config.PBF_EUROPE_WHOLE_NAME,
+                                 config.OSM_TEMP_PATH,
+                                 config.OSM_TEMP_NAME_BASE + f"{str(shop_num)}" + config.OSM_TEMP_NAME_SUFFIX)
+        else:
+            osm_extract_from_pbf(shop_lon_list[shop_num]-config.bounding_box,
+                                 shop_lat_list[shop_num]-config.bounding_box,
+                                 shop_lon_list[shop_num]+config.bounding_box,
+                                 shop_lat_list[shop_num]+config.bounding_box,
+                                 config.OSM_TOOL_PATH, config.PBF_PATH, config.PBF_WHOLE_NAME,
+                                 config.OSM_TEMP_PATH,
+                                 config.OSM_TEMP_NAME_BASE + f"{str(shop_num)}" + config.OSM_TEMP_NAME_SUFFIX)
+        osm_name_temp = (config.OSM_TEMP_PATH + config.OSM_TEMP_NAME_BASE
+                         + f"{str(shop_num)}" + config.OSM_TEMP_NAME_SUFFIX)
+
+        # use the newly extracted .osm file to find information about the shop
+        # the original function is programed for a list of information and return the building area & attractive factor
+        # also in a list, but it can still be used with some adjustments
+        shop_area, shop_infra = get_shop_way_ref_osm_multi_OSM_test([shop_lon_list[shop_num]],
+                                                                    [shop_lat_list[shop_num]],
+                                                                    [shop_name_list[shop_num]],
+                                                                    [shop_housenumber_list[shop_num]],
+                                                                    [shop_street_list[shop_num]],
+                                                                    osm_name_temp,
+                                                                    config.bounding_box,
+                                                                    shop_lon_list[shop_num] - config.bounding_box,
+                                                                    shop_lat_list[shop_num] - config.bounding_box,
+                                                                    1, 1, 0
+                                                                    )
+        # write the data to the list
+        shop_area_list.append(shop_area[0])
+        shop_infra_list.append(shop_infra[0])
+
+        # delete temp .osm file to save space
+        os.remove(osm_name_temp)
+        print("----------------------------------------------------------------------------------")
+
+    # save the data back to the .xlsx file
+    if len(shop_area_list) == len(shop_lon_list):
+        add_shop_info_column_to_excel(config.test_area_shop_list_path + config.test_area_shop_list_name,
+                                      config.test_area_shop_list_sheet, shop_area_list, 'building_area')
+        add_shop_info_column_to_excel(config.test_area_shop_list_path + config.test_area_shop_list_name,
+                                      config.test_area_shop_list_sheet, shop_infra_list, 'infra_factor')
+
+    print("----------------------------------------------------------------------------------")
 
     # retrieve the shops' attraction data inside the whole test area 0, 1&2
     test_area_shops_attraction = get_shop_attraction(config.test_area_shop_list_path + config.test_area_shop_list_name,
                                                      config.test_area_shop_list_sheet)
+
+    # generate a .xlsx file containing all the driving distances from shops to block centers
+    list_coord, list_shop, list_block = distance_generator(area_info[1] + area_info[7], area_info[2] + area_info[8],
+                                                    config.test_area_shop_list_path + config.test_area_shop_list_name,
+                                                    config.test_area_shop_list_sheet)
+
+    if config.USE_EXT_PGM_DISTANCE:
+        # Here is the reserved space for external program,
+        # which aims to generate the shop-block center distance database.
+        # The to-be-used parameters are listed before: list_coord, list_shop, list_block
+        pass
+    else:
+        # # use multiprocessing to generate a distance list between shops and block centers,
+        # only available with internal program and multiprocessing
+        # cpu_num = cpu_count()
+
+        # read the osm file and store it as a graph for further distance calculating
+        print("Creating the distance database for the program now.")
+        print('-------------------------------------')
+        G = graph_from_xml(config.OSM_PATH + config.OSM_NAME)
+
+        dis = []
+        # this part could be replaced by the further multiprocessing program
+        for list_num in range(len(list_coord)):
+            print(f'Calculating {list_num+1}. distance record. Total {len(list_coord)} data records.')
+            orig = ox.nearest_nodes(G, X=list_coord[list_num][0], Y=list_coord[list_num][1])
+            dest = ox.nearest_nodes(G, X=list_coord[list_num][2], Y=list_coord[list_num][3])
+            length = nx.shortest_path_length(G, orig, dest, weight='length')
+            if length == 0 or length == 0.0:
+                length = 0.3  # make sure the distance is not zero, because it is going to be used as a denominator
+            dis.append(length)
+
+        # delete G to save memery
+        del G
+
+        # write the data back to distance .xlsx file
+        distance_writer(list_shop, list_block, dis,
+                        config.distance_list_path + config.distance_list_name,
+                        config.distance_list_sheet)
+
+    print('-------------------------------------')
+    print("Distance data written to .xlsx file.")
+    print('-------------------------------------')
 
     # the customer number list of the shops
     shops_customer = []
@@ -225,6 +350,7 @@ if __name__ == '__main__':
     # loop in every block to calculate the given shop's visiting customer
     for shop_num in range(len(input_shop_xlsx)):
 
+        # find out which place this shop in .xlsx file 2 is in
         shop_num_in_excel2 = int(shop_order[shop_num])
         customer = 0
 
@@ -235,22 +361,22 @@ if __name__ == '__main__':
 
             # blocks in area 0
             if block_num < len(area_info[1]):
-                block_customer = (get_test_area_customer_shop_possibility(
-                                        area_info[1][block_num],
-                                        area_info[2][block_num],
+                block_customer = (get_test_area_customer_shop_possibility_from_xlsx(
                                         shop_num_in_excel2,
-                                        config.OSM_PATH + config.OSM_NAME,
+                                        shop_num, block_num, len(area_info[1]) + len(area_info[7]),
+                                        config.distance_list_path + config.distance_list_name,
+                                        config.distance_list_sheet,
                                         config.test_area_shop_list_path + config.test_area_shop_list_name,
                                         config.test_area_shop_list_sheet)
                                   * area_info[5][block_num])
 
             # blocks in area 1
             else:
-                block_customer = (get_test_area_customer_shop_possibility(
-                                        area_info[7][block_num-len(area_info[1])],
-                                        area_info[8][block_num-len(area_info[1])],
+                block_customer = (get_test_area_customer_shop_possibility_from_xlsx(
                                         shop_num_in_excel2,
-                                        config.OSM_PATH + config.OSM_NAME,
+                                        shop_num, block_num, len(area_info[1]) + len(area_info[7]),
+                                        config.distance_list_path + config.distance_list_name,
+                                        config.distance_list_sheet,
                                         config.test_area_shop_list_path + config.test_area_shop_list_name,
                                         config.test_area_shop_list_sheet)
                                   * area_info[11][block_num-len(area_info[1])])
@@ -298,7 +424,7 @@ if __name__ == '__main__':
     # transform the unit to Euro/day
     sale_amount_corrected_day = get_test_area_retail_day_correction(sale_amount_corrected, config.MONTH, config.YEAR)
 
-    # use standard_year to calculate the good's value-weight relationship
+    # use standard_year to calculate the good's value-weight relationship, unit in Euro/kg
     RLS_retail = get_RLS_retail_data(standard_year,
                                      config.RLS_retail_path + config.RLS_retail_name,
                                      config.RLS_retail_sheet)
@@ -309,31 +435,68 @@ if __name__ == '__main__':
     else:
         raise ValueError
 
-    # convert the retail sale amount into retail good weight
-    retail_amount = [i / RLS_retail for i in sale_amount_corrected_day]
+    # convert the retail sale amount into retail good weight(kg)
+    retail_amount_kg = [i / RLS_retail for i in sale_amount_corrected_day]
 
-    # write the sale amount back to the input .xlsx file
+    # the Anylogic program demands the unit of good mass as ton, so need to convert unit
+    retail_amount = [i / 1000 for i in retail_amount_kg]
+
+    # ---------------------------------------TBD----------------------------------------------------------------------
+    # IMPORTANT note: Since the Anylogic program cannot deal with order with more than 14 ton/day,
+    # here force set amount over 14 ton to 14 in order to avoid further questions.
+    # this is not a mistake or limitation in this calculating program, so after modifying the Anylogic program,
+    # this part of the code can be, and should be deleted.
+    for i in range(len(retail_amount)):
+        if retail_amount[i] >= 14:
+            retail_amount[i] = 13.99
+    # -----------------------------------end TBD----------------------------------------------------------------------
+
+    print('-------------------------------------------')
+
+    # write the sale amount back to the input .xlsx file ()
     add_shop_info_column_to_excel(config.input_xlsx_file_path + config.input_xlsx_file_name,
                                   config.input_xlsx_file_sheet,
                                   retail_amount,
                                   "retail_amount_weight")
 
+    # duplicate the original .xlsx file and store the new column data into the new .xlsx file
     # write the sale amount back to the original .xlsx file in Anylogic program folder
     if config.USE_ANYLOGIC_FILE_AS_INPUT:
-        add_shop_info_column_to_excel(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
-                                      config.ORG_XLSX_SHEET,
+
+        # create a duplication of original .xlsx file in the new Anylogic program folder
+        shutil.copy(config.ORG_XLSX_PATH + config.ORG_XLSX_NAME,
+                    config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME)
+
+        # write the data into the new file
+        add_shop_info_column_to_excel(config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME,
+                                      config.ORG_XLSX_WITH_RST_SHEET,
                                       retail_amount,
                                       "retail_amount_weight")
 
-    print("Data written back into the .xlsx file in Anylogic program path, the calculation process ends.")
+    # test if the file is successfully created
+    if os.path.exists(config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME):
+        pass
+    else:
+        print(f"The output file in path {config.ORG_XLSX_WITH_RST_PATH + config.ORG_XLSX_WITH_RST_NAME} is not created."
+              f" Something is wrong. Please check your code.")
+    print('-------------------------------------------------------------------------------------------------')
+    print('-------------------------------------------------------------------------------------------------')
+    print(f'Total program execution time: {str(time.time() - start_time)} seconds.\n'
+          f'Input shops: {str(len(input_shop_xlsx))},\n'
+          f'Area shops: {str(len(shop_lon_list))},\n'
+          f'Blocks (in test areas 0&1): {str(len(area_info[1])+len(area_info[7]))},\n'
+          f'Blocks (in total test areas): {str(len(area_info[1])+len(area_info[7])+len(area_info[13]))}.')
+    print('-------------------------------------------------------------------------------------------------')
+    print(f"Data written back into the .xlsx file in Anylogic program path, the calculation process is finished.")
+    print('-------------------------------------------------------------------------------------------------')
+    print('-------------------------------------------------------------------------------------------------')
 
     # then the Anylogic model can be run.
     # after running the model and generating a .csv output file,
     # the function "Anylogic_output_csv_process" in "Anylogic_data_process" can be of help in processing result data.
 
-    pass
     sys.exit()
 
 else:
-    print("This script should not be called by other scripts.")
+    print("This main script should not be called by other scripts.")
     sys.exit()
