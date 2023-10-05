@@ -122,62 +122,78 @@ def Anylogic_output_csv_process(csv_file_path1, csv_file_name1, csv_file_path2, 
         day_remain_cap_org = [whole_capacity] * 960  # from 8:00-24:00
         day_remain_cap_new = [whole_capacity] * 960  # from 8:00-24:00
 
-        # split the day's records according to vehicle ID
-        csv_org_day_group_id_group = csv_org_day_group.get_group(day + 1).groupby('id')
-        csv_new_day_group_id_group = csv_new_day_group.get_group(day + 1).groupby('id')
+        # consider the situation that in one day, no truck is assigned, thus no record for that day
+        if (day + 1) in csv_org_day_group.groups and (day + 1) in csv_new_day_group.groups:
 
-        # active vehicle number for that day
-        org_v_active = len(list(csv_org_day_group_id_group.groups.keys()))
-        new_v_active = len(list(csv_new_day_group_id_group.groups.keys()))
+            # split the day's records according to vehicle ID
+            csv_org_day_group_id_group = csv_org_day_group.get_group(day + 1).groupby('id')
+            csv_new_day_group_id_group = csv_new_day_group.get_group(day + 1).groupby('id')
 
-        # (the original file) for every vehicle, which is in use in that day, generates its capacity changeset
-        for v_id_org in range(org_v_active):
-            list0 = csv_org_day_group_id_group.get_group(list(csv_org_day_group_id_group.groups.keys())[v_id_org])
+            # active vehicle number for that day
+            org_v_active = len(list(csv_org_day_group_id_group.groups.keys()))
+            new_v_active = len(list(csv_new_day_group_id_group.groups.keys()))
 
-            # this vehicle's capacity
-            cap = float(list0.values[0][0].split('_')[1])
+            # (the original file) for every vehicle, which is in use in that day, generates its capacity changeset
+            for v_id_org in range(org_v_active):
+                list0 = csv_org_day_group_id_group.get_group(list(csv_org_day_group_id_group.groups.keys())[v_id_org])
 
-            # create a 2D list to store the change-sheet of this vehicle
-            list_2D = []
-            for rcd_num in range(len(list0)):
+                # this vehicle's capacity
+                cap = float(list0.values[0][0].split('_')[1])
 
-                # set time unit as minute counts: 08:00 -> 0, 08:20 -> 20, 12:20 -> 260, 16:30 -> 510, no more than 960
-                # others can be deduced in this way
-                list_2D.append(((list0.values[rcd_num][2]-8)*60+list0.values[rcd_num][3], list0.values[rcd_num][6]))
+                # create a 2D list to store the change-sheet of this vehicle
+                list_2D = []
+                for rcd_num in range(len(list0)):
 
-            # add an init record, in case some vehicle does not have a (time=0800, free_capacity=cap) record
-            # and thus cause undesired questions
-            if list_2D[0][0] != 0:
-                list_2D.insert(0, (0, cap))
+                    # set time unit as minute counts: 08:00 -> 0, 08:20 -> 20, 12:20 -> 260, 16:30 -> 510,
+                    # no more than 960
+                    # others can be deduced in this way
+                    list_2D.append(((list0.values[rcd_num][2]-8)*60+list0.values[rcd_num][3], list0.values[rcd_num][6]))
 
-            v_remain_cap = time_anchor_2_continuous_data(list_2D, cap)
-            day_remain_cap_org = [day_remain_cap_org[i] + v_remain_cap[i] for i in range(len(day_remain_cap_org))]
+                # add an init record, in case some vehicle does not have a (time=0800, free_capacity=cap) record
+                # and thus cause undesired questions
+                if list_2D[0][0] != 0:
+                    list_2D.insert(0, (0, cap))
+
+                v_remain_cap = time_anchor_2_continuous_data(list_2D, cap)
+                day_remain_cap_org = [day_remain_cap_org[i] + v_remain_cap[i] for i in range(len(day_remain_cap_org))]
+
+            # (the new file) for every vehicle, which is in use in that day, generates its capacity changeset
+            for v_id_new in range(new_v_active):
+                list0 = csv_new_day_group_id_group.get_group(list(csv_new_day_group_id_group.groups.keys())[v_id_new])
+
+                # this vehicle's capacity
+                cap = float(list0.values[0][0].split('_')[1])
+
+                # create a 2D list to store the change-sheet of this vehicle
+                list_2D = []
+                for rcd_num in range(len(list0)):
+                    # set time unit as minute counts: 08:00 -> 0, 08:20 -> 20, 12:20 -> 260, 16:30 -> 510,
+                    # no more than 960
+                    # others can be deduced in this way
+                    list_2D.append(
+                        ((list0.values[rcd_num][2] - 8) * 60 + list0.values[rcd_num][3], list0.values[rcd_num][6]))
+
+                # add an init record, in case some vehicle does not have a (time=0800, free_capacity=cap) record
+                # and thus cause undesired questions
+                if list_2D[0][0] != 0:
+                    list_2D.insert(0, (0, cap))
+
+                v_remain_cap = time_anchor_2_continuous_data(list_2D, cap)
+                day_remain_cap_new = [day_remain_cap_new[i] + v_remain_cap[i] for i in range(len(day_remain_cap_new))]
+
+        elif (day + 1) in csv_org_day_group.groups or (day + 1) in csv_new_day_group.groups:
+            # here just assume the situation
+            # that no record for a specific day should not occur only for one Anylogic-program.
+            pass
+
+        else:
+            # the situation that one day's record is not available for both .csv results
+            # in such case, no adjustments need to be made here.
+            # the day_remain_cap_org and day_remain_cap_new should remain the whole capacity of the fleet
+            pass
 
         # write this day's original program data into org_data
         org_data.append(day_remain_cap_org)
-
-        # (the new file) for every vehicle, which is in use in that day, generates its capacity changeset
-        for v_id_new in range(new_v_active):
-            list0 = csv_new_day_group_id_group.get_group(list(csv_new_day_group_id_group.groups.keys())[v_id_new])
-
-            # this vehicle's capacity
-            cap = float(list0.values[0][0].split('_')[1])
-
-            # create a 2D list to store the change-sheet of this vehicle
-            list_2D = []
-            for rcd_num in range(len(list0)):
-                # set time unit as minute counts: 08:00 -> 0, 08:20 -> 20, 12:20 -> 260, 16:30 -> 510, no more than 960
-                # others can be deduced in this way
-                list_2D.append(
-                    ((list0.values[rcd_num][2] - 8) * 60 + list0.values[rcd_num][3], list0.values[rcd_num][6]))
-
-            # add an init record, in case some vehicle does not have a (time=0800, free_capacity=cap) record
-            # and thus cause undesired questions
-            if list_2D[0][0] != 0:
-                list_2D.insert(0, (0, cap))
-
-            v_remain_cap = time_anchor_2_continuous_data(list_2D, cap)
-            day_remain_cap_new = [day_remain_cap_new[i] + v_remain_cap[i] for i in range(len(day_remain_cap_new))]
 
         # write this day's new program data into new_data
         new_data.append(day_remain_cap_new)

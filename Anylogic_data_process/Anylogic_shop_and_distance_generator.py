@@ -156,10 +156,10 @@ if __name__ == '__main__':
 
     # first, use the input coordinates to create a Anylogic program format shop location file
     # you can CHANGE the coordinates here!!!
-    lon_1 = 10.7276
-    lat_1 = 52.7235
-    lon_2 = 10.7528
-    lat_2 = 52.7325
+    lon_1 = 11.1117
+    lat_1 = 52.9199
+    lon_2 = 11.1370
+    lat_2 = 52.9288
 
     config = Anylogic_related_settings
 
